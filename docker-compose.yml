@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: erp_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: erp
+      POSTGRES_USER: erp_user
+      POSTGRES_PASSWORD: erp_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp_user -d erp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./packages/backend
+    container_name: erp_backend
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: postgres://erp_user:erp_password@db:5432/erp
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: erp
+      DB_USER: erp_user
+      DB_PASSWORD: erp_password
+    volumes:
+      - ./packages/backend:/app
+      - /app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./packages/frontend
+    container_name: erp_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./packages/frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
