@@ -23,24 +23,26 @@ services:
     container_name: erp_backend
     ports:
       - "4000:4000"
+    env_file:
+      - .env
     environment:
-      DATABASE_URL: postgres://erp_user:erp_password@db:5432/erp
-      DB_HOST: db
-      DB_PORT: "5432"
-      DB_NAME: erp
-      DB_USER: erp_user
-      DB_PASSWORD: erp_password
-      JWT_SECRET: change-me-in-production
-      CORS_ORIGINS: http://localhost:3000
-      EXPOSE_2FA_CODE: "true"
-      GOOGLE_CLIENT_ID: ""
-      SMTP_HOST: smtp.gmail.com
-      SMTP_PORT: "587"
-      SMTP_SECURE: "false"
-      SMTP_USER: "jhovannyalave@gmail.com"
-      SMTP_PASS: "fvkv juwu cfvk crfj"
-      SMTP_FROM: "jhovannyalave@gmail.com"
-      TWO_FACTOR_EMAIL_OVERRIDE: "jhovannyalave@gmail.com"
+      DATABASE_URL: ${DATABASE_URL}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      EXPOSE_2FA_CODE: ${EXPOSE_2FA_CODE}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_SECURE: ${SMTP_SECURE}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
+      TWO_FACTOR_EMAIL_OVERRIDE: ${TWO_FACTOR_EMAIL_OVERRIDE}
     volumes:
       - ./packages/backend:/app
       - /app/node_modules
@@ -63,4 +65,3 @@ services:
 
 volumes:
   postgres_data:
-  
