@@ -1,4 +1,4 @@
-# ERP Proyecto Auxiliar
+# ERP Proyecto Modulo de Compras
 
 Backend y frontend de un ERP académico con enfoque en compras, proveedores, inventario y pagos.
 
