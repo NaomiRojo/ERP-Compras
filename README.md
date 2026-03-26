@@ -105,12 +105,18 @@ Referencia:
 docker compose up --build
 ```
 
+Si tu instalación de Docker falla por `docker-buildx` faltante, usa:
+
+```bash
+DOCKER_BUILDKIT=0 docker compose up --build
+```
+
 Servicios:
 
 - backend: `http://localhost:4000`
 - swagger: `http://localhost:4000/docs`
 - frontend: `http://localhost:3000`
-- postgres: `localhost:5432`
+- postgres: `localhost:5433`
 
 ### Desarrollo local
 
