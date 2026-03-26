@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: erp_user
       POSTGRES_PASSWORD: erp_password
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PUBLISHED_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./packages/backend/src/infrastructure/persistence/postgres/init:/docker-entrypoint-initdb.d
@@ -23,26 +23,19 @@ services:
     container_name: erp_backend
     ports:
       - "4000:4000"
-    env_file:
-      - .env
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      CORS_ORIGINS: ${CORS_ORIGINS}
-      EXPOSE_2FA_CODE: ${EXPOSE_2FA_CODE}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      SMTP_HOST: ${SMTP_HOST}
-      SMTP_PORT: ${SMTP_PORT}
-      SMTP_SECURE: ${SMTP_SECURE}
-      SMTP_USER: ${SMTP_USER}
-      SMTP_PASS: ${SMTP_PASS}
-      SMTP_FROM: ${SMTP_FROM}
-      TWO_FACTOR_EMAIL_OVERRIDE: ${TWO_FACTOR_EMAIL_OVERRIDE}
+      DATABASE_URL: ${DATABASE_URL:-postgres://erp_user:erp_password@db:5432/erp}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      EXPOSE_2FA_CODE: ${EXPOSE_2FA_CODE:-true}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      TWO_FACTOR_EMAIL_OVERRIDE: ${TWO_FACTOR_EMAIL_OVERRIDE:-}
     volumes:
       - ./packages/backend:/app
       - /app/node_modules

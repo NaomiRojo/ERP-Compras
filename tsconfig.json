@@ -13,6 +13,11 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./packages/frontend/src/*"],
+      "src/*": ["./packages/backend/src/*"]
+    },
 
     // Best practices
     "strict": true,
