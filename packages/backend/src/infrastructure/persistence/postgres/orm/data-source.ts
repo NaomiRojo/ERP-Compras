@@ -6,25 +6,34 @@ import { CompraEncabezadoEntitySchema } from "src/infrastructure/persistence/pos
 import { ProveedorEntitySchema } from "src/infrastructure/persistence/postgres/entities/ProveedorEntity";
 import { RefreshTokenSesionEntitySchema } from "src/infrastructure/persistence/postgres/entities/RefreshTokenSesionEntity";
 import { UsuarioEntitySchema } from "src/infrastructure/persistence/postgres/entities/UsuarioEntity";
+import { InitPostgresSchemaMigration } from "src/infrastructure/persistence/postgres/migrations/InitPostgresSchemaMigration";
 
-const databaseUrl = Bun.env.DATABASE_URL;
+const entities = [
+  ProveedorEntitySchema,
+  ArticuloEntitySchema,
+  CompraEncabezadoEntitySchema,
+  CompraDetalleEntitySchema,
+  UsuarioEntitySchema,
+  RefreshTokenSesionEntitySchema,
+  CodigoSegundoFactorEntitySchema,
+];
 
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL es obligatorio");
-}
+export const resolveDatabaseUrl = (): string => {
+  const databaseUrl = Bun.env.DATABASE_URL?.trim();
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL es obligatorio");
+  }
 
-export const AppDataSource = new DataSource({
-  type: "postgres",
-  url: databaseUrl,
-  synchronize: false,
-  logging: false,
-  entities: [
-    ProveedorEntitySchema,
-    ArticuloEntitySchema,
-    CompraEncabezadoEntitySchema,
-    CompraDetalleEntitySchema,
-    UsuarioEntitySchema,
-    RefreshTokenSesionEntitySchema,
-    CodigoSegundoFactorEntitySchema,
-  ],
-});
+  return databaseUrl;
+};
+
+export const createAppDataSource = (): DataSource =>
+  new DataSource({
+    type: "postgres",
+    url: resolveDatabaseUrl(),
+    synchronize: false,
+    logging: false,
+    migrationsTableName: "typeorm_migrations",
+    entities,
+    migrations: [InitPostgresSchemaMigration],
+  });

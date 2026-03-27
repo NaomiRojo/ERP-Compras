@@ -1,13 +1,13 @@
 import type { LoginDto } from "src/application/dtos/auth/LoginDto";
 import type { IPasswordService } from "src/application/interfaces/IPasswordService";
 import type { IUsuarioRepository } from "src/domain/repositories/IUsuarioRepository";
-import { AuthSessionService, type AuthLoginResponse } from "./AuthSessionService";
+import type { AuthLoginResponse, IAuthSessionService } from "./AuthSessionService";
 
 export class LoginUsuarioUseCase {
   public constructor(
     private readonly usuarioRepository: IUsuarioRepository,
     private readonly passwordService: IPasswordService,
-    private readonly authSessionService: AuthSessionService,
+    private readonly authSessionService: IAuthSessionService,
   ) {}
 
   public async execute(dto: LoginDto): Promise<AuthLoginResponse> {

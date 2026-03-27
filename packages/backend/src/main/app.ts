@@ -1,10 +1,11 @@
-import { container } from "./container";
-import { handleArticuloRoutes } from "src/presentation/http/handlers/articuloHandlers";
-import { handleAuthRoutes } from "src/presentation/http/handlers/authHandlers";
-import { handleOrdenCompraRoutes } from "src/presentation/http/handlers/ordenCompraHandlers";
-import { handleProveedorRoutes } from "src/presentation/http/handlers/proveedorHandlers";
-import { handleUsuarioRoutes } from "src/presentation/http/handlers/usuarioHandlers";
+import type { HttpDependencies } from "src/presentation/http/dependencies";
+import { createArticuloRouteHandler } from "src/presentation/http/handlers/articuloHandlers";
+import { createAuthRouteHandler } from "src/presentation/http/handlers/authHandlers";
+import { createOrdenCompraRouteHandler } from "src/presentation/http/handlers/ordenCompraHandlers";
+import { createProveedorRouteHandler } from "src/presentation/http/handlers/proveedorHandlers";
+import { createUsuarioRouteHandler } from "src/presentation/http/handlers/usuarioHandlers";
 import { authenticate } from "src/presentation/http/middlewares/auth";
+import { authorize, resolveRouteAuthorization } from "src/presentation/http/middlewares/authorization";
 import { openApiDocument } from "src/presentation/http/openapi";
 import { corsHeaders, json } from "src/presentation/http/response";
 
@@ -56,91 +57,99 @@ const swaggerUiHtml = `
 </html>
 `;
 
-const guardProtectedPrefix = async (
-  request: Request,
-  pathname: string,
-  origin: string | null,
-): Promise<Response | null> => {
-  if (
-    pathname.startsWith("/api/usuarios") ||
-    pathname.startsWith("/api/proveedores") ||
-    pathname.startsWith("/api/articulos") ||
-    pathname.startsWith("/api/ordenes-compra")
-  ) {
+export const createApp = (dependencies: HttpDependencies) => {
+  const handleAuthRoutes = createAuthRouteHandler(dependencies);
+  const handleUsuarioRoutes = createUsuarioRouteHandler(dependencies);
+  const handleProveedorRoutes = createProveedorRouteHandler(dependencies);
+  const handleArticuloRoutes = createArticuloRouteHandler(dependencies);
+  const handleOrdenCompraRoutes = createOrdenCompraRouteHandler(dependencies);
+
+  const guardProtectedRoute = async (
+    request: Request,
+    pathname: string,
+    origin: string | null,
+  ): Promise<Response | null> => {
+    const routeAuthorization = resolveRouteAuthorization(request.method, pathname);
+    if (!routeAuthorization) {
+      return null;
+    }
+
     try {
-      await authenticate(request, container.tokenService);
+      const authContext = await authenticate(request, dependencies.tokenService);
+      authorize(authContext, routeAuthorization.allowedRoleIds);
     } catch (error) {
       const message = error instanceof Error ? error.message : "No autorizado";
-      return json({ message }, 401, origin);
-    }
-  }
-
-  return null;
-};
-
-export const app = {
-  async fetch(request: Request): Promise<Response> {
-    const url = new URL(request.url);
-    const origin = request.headers.get("origin");
-    const { pathname } = url;
-
-    if (request.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204,
-        headers: corsHeaders(origin),
-      });
+      const status = message.includes("no tiene permisos") ? 403 : 401;
+      return json({ message }, status, origin);
     }
 
-    if (request.method === "GET" && pathname === "/health") {
-      return json({ status: "ok" }, 200, origin);
-    }
+    return null;
+  };
 
-    if (request.method === "GET" && pathname === "/openapi.json") {
-      return json(openApiDocument, 200, origin);
-    }
+  return {
+    async fetch(request: Request): Promise<Response> {
+      const url = new URL(request.url);
+      const origin = request.headers.get("origin");
+      const { pathname } = url;
 
-    if (request.method === "GET" && (pathname === "/docs" || pathname === "/docs/")) {
-      return html(swaggerUiHtml);
-    }
+      if (request.method === "OPTIONS") {
+        return new Response(null, {
+          status: 204,
+          headers: corsHeaders(origin),
+        });
+      }
 
-    if (request.method === "GET" && pathname === "/docs/swagger-ui.css") {
-      return swaggerUiAsset("swagger-ui.css");
-    }
+      if (request.method === "GET" && pathname === "/health") {
+        return json({ status: "ok" }, 200, origin);
+      }
 
-    if (request.method === "GET" && pathname === "/docs/swagger-ui-bundle.js") {
-      return swaggerUiAsset("swagger-ui-bundle.js");
-    }
+      if (request.method === "GET" && pathname === "/openapi.json") {
+        return json(openApiDocument, 200, origin);
+      }
 
-    const authResponse = await handleAuthRoutes(request, pathname, origin, container);
-    if (authResponse) {
-      return authResponse;
-    }
+      if (request.method === "GET" && (pathname === "/docs" || pathname === "/docs/")) {
+        return html(swaggerUiHtml);
+      }
 
-    const guardResponse = await guardProtectedPrefix(request, pathname, origin);
-    if (guardResponse) {
-      return guardResponse;
-    }
+      if (request.method === "GET" && pathname === "/docs/swagger-ui.css") {
+        return swaggerUiAsset("swagger-ui.css");
+      }
 
-    const usuarioResponse = await handleUsuarioRoutes(request, pathname, origin, container);
-    if (usuarioResponse) {
-      return usuarioResponse;
-    }
+      if (request.method === "GET" && pathname === "/docs/swagger-ui-bundle.js") {
+        return swaggerUiAsset("swagger-ui-bundle.js");
+      }
 
-    const proveedorResponse = await handleProveedorRoutes(request, pathname, origin, container);
-    if (proveedorResponse) {
-      return proveedorResponse;
-    }
+      const authResponse = await handleAuthRoutes(request, pathname, origin);
+      if (authResponse) {
+        return authResponse;
+      }
 
-    const articuloResponse = await handleArticuloRoutes(request, pathname, origin, container);
-    if (articuloResponse) {
-      return articuloResponse;
-    }
+      const guardResponse = await guardProtectedRoute(request, pathname, origin);
+      if (guardResponse) {
+        return guardResponse;
+      }
 
-    const ordenCompraResponse = await handleOrdenCompraRoutes(request, pathname, origin, container);
-    if (ordenCompraResponse) {
-      return ordenCompraResponse;
-    }
+      const usuarioResponse = await handleUsuarioRoutes(request, pathname, origin);
+      if (usuarioResponse) {
+        return usuarioResponse;
+      }
 
-    return json({ message: "Not found" }, 404, origin);
-  },
+      const proveedorResponse = await handleProveedorRoutes(request, pathname, origin);
+      if (proveedorResponse) {
+        return proveedorResponse;
+      }
+
+      const articuloResponse = await handleArticuloRoutes(request, pathname, origin);
+      if (articuloResponse) {
+        return articuloResponse;
+      }
+
+      const ordenCompraResponse = await handleOrdenCompraRoutes(request, pathname, origin);
+      if (ordenCompraResponse) {
+        return ordenCompraResponse;
+      }
+
+      return json({ message: "Not found" }, 404, origin);
+    },
+  };
 };

@@ -24,7 +24,14 @@ export type AuthLoginResponse =
       requiresTwoFactor: false;
     } & AuthTokensResponse);
 
-export class AuthSessionService {
+export interface IAuthSessionService {
+  completeLogin(usuario: Usuario): Promise<AuthLoginResponse>;
+  issueTokens(usuario: Usuario): Promise<AuthTokensResponse>;
+  rotateRefreshToken(session: RefreshTokenSesion, usuario: Usuario): Promise<AuthTokensResponse>;
+  validateRefreshToken(refreshToken: string): Promise<RefreshTokenSesion | null>;
+}
+
+export class AuthSessionService implements IAuthSessionService {
   public constructor(
     private readonly codigoSegundoFactorRepository: ICodigoSegundoFactorRepository,
     private readonly refreshTokenRepository: IRefreshTokenSesionRepository,
@@ -121,6 +128,14 @@ export class AuthSessionService {
     );
 
     return { accessToken, refreshToken };
+  }
+
+  public async rotateRefreshToken(
+    session: RefreshTokenSesion,
+    usuario: Usuario,
+  ): Promise<AuthTokensResponse> {
+    await this.refreshTokenRepository.revokeById(session.props.id);
+    return this.issueTokens(usuario);
   }
 
   public async validateRefreshToken(

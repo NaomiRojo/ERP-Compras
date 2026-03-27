@@ -19,8 +19,11 @@ El proyecto ya cuenta con una base funcional de backend y entorno Docker. El fro
 - Onion Architecture en `packages/backend/src`
 - conexión real a PostgreSQL
 - `docker-compose.yml` funcional para `db`, `backend` y `frontend`
+- migraciones formales con TypeORM usando los SQL versionados del proyecto
+- seed de demo para usuario, proveedor y artículo
 - autenticación con registro, login, refresh token y JWT
 - segundo factor `2FA`
+- autorización por roles en rutas del módulo de compras
 - envío de código `2FA` por correo con SMTP/Gmail
 - login con Google/Gmail
 - Swagger/OpenAPI
@@ -39,10 +42,8 @@ El proyecto ya cuenta con una base funcional de backend y entorno Docker. El fro
   - registrar recepción
   - registrar factura
   - registrar pago
-- roles y autorización por permisos
-- más pruebas unitarias e integración
-- documento formal de arquitectura
-- diagrama de base de datos para exposición
+- permisos granulares para futuros flujos de aprobación, recepción y pago
+- más pruebas de integración
 
 ## Avance del 22-03-2026
 
@@ -55,7 +56,7 @@ Durante esta jornada se realizó lo siguiente:
 - reutilización del auth útil y eliminación del auth legacy que ya no servía
 - integración de login con Google/Gmail
 - integración de `2FA` con envío por correo SMTP
-- configuración para redirigir el correo 2FA a `jhovannyalave@gmail.com` en entorno de prueba
+- configuración para redirigir el correo 2FA a una cuenta de pruebas del equipo
 - creación de `GET /api/usuarios`
 - validación de tests y typecheck del backend
 
@@ -89,13 +90,16 @@ La arquitectura del backend sigue Onion:
 - `domain`: entidades y contratos del negocio
 - `application`: DTOs, interfaces y casos de uso
 - `infrastructure`: PostgreSQL, TypeORM, JWT, SMTP, logging
-- `presentation`: API HTTP, middlewares y OpenAPI
-- `main`: composición de dependencias y arranque
+- `presentation`: API HTTP, middlewares, serializadores y contratos de dependencias HTTP
+- `main`: composición de dependencias, bootstrap y arranque
 
 Regla principal: las dependencias apuntan hacia adentro.
 
 Referencia:
-- [ARCHITECTURE.md](/home/jhova/Erp-Proyecto-auxiliar_pruebas/packages/backend/src/ARCHITECTURE.md)
+- [ARCHITECTURE.md](/home/naomi/erp-final/packages/backend/src/ARCHITECTURE.md)
+- [database-diagram.md](/home/naomi/erp-final/docs/database-diagram.md)
+- [backend-demo.md](/home/naomi/erp-final/docs/backend-demo.md)
+- [azure-devops-scrum.md](/home/naomi/erp-final/docs/azure-devops-scrum.md)
 
 ## Cómo levantar el proyecto
 
@@ -117,6 +121,7 @@ Servicios:
 - swagger: `http://localhost:4000/docs`
 - frontend: `http://localhost:3000`
 - postgres: `localhost:5433`
+- al iniciar por Docker, el backend corre `db:migrate`; el `seed` de demo sigue siendo manual
 
 ### Desarrollo local
 
@@ -131,6 +136,9 @@ Backend:
 ```bash
 cd packages/backend
 bun install
+bun run db:reset
+bun run db:migrate
+bun run db:seed
 bun run dev
 ```
 
@@ -141,6 +149,19 @@ cd packages/frontend
 bun install
 bun run dev
 ```
+
+Archivos de entorno recomendados:
+
+- raíz: [`.env`](/home/naomi/erp-final/.env) para Docker Compose
+- backend local: [`packages/backend/.env.local`](/home/naomi/erp-final/packages/backend/.env.local)
+- frontend local: [`packages/frontend/.env.local`](/home/naomi/erp-final/packages/frontend/.env.local)
+
+Conexión local esperada:
+
+- backend local en `http://localhost:4000`
+- frontend local en `http://localhost:3000`
+- frontend usa `BUN_PUBLIC_API_URL=http://localhost:4000`
+- backend local usa `DATABASE_URL=postgres://erp_user:erp_password@localhost:5433/erp`
 
 ## Variables importantes del backend
 
@@ -176,7 +197,7 @@ Para Gmail SMTP:
 
 Mientras el correo esté en pruebas:
 
-- `TWO_FACTOR_EMAIL_OVERRIDE=jhovannyalave@gmail.com`
+- `TWO_FACTOR_EMAIL_OVERRIDE=qa-2fa@erp.local`
 
 Cuando el correo ya funcione correctamente:
 
@@ -232,10 +253,14 @@ Cuando el correo ya funcione correctamente:
 El backend ya tiene pruebas unitarias iniciales para:
 
 - registro de usuarios
+- login con email y password
 - login con Google
 - sesión y segundo factor
+- refresh token
 - listado de usuarios
-- creación de proveedores
+- creación y actualización de proveedores
+- CRUD base de artículos
+- cálculo y actualización de órdenes de compra
 
 Ejecutar:
 
@@ -261,6 +286,6 @@ Se validó:
 
 ## Referencias internas
 
-- [README backend](/home/jhova/Erp-Proyecto-auxiliar_pruebas/packages/backend/README.md)
-- [App principal backend](/home/jhova/Erp-Proyecto-auxiliar_pruebas/packages/backend/src/main/app.ts)
-- [Contenedor de dependencias](/home/jhova/Erp-Proyecto-auxiliar_pruebas/packages/backend/src/main/container.ts)
+- [README backend](/home/naomi/erp-final/packages/backend/README.md)
+- [App principal backend](/home/naomi/erp-final/packages/backend/src/main/app.ts)
+- [Contenedor de dependencias](/home/naomi/erp-final/packages/backend/src/main/container.ts)
