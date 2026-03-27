@@ -1,6 +1,7 @@
 import type { Articulo } from "src/domain/entities/Articulo";
 import type { OrdenCompra } from "src/domain/entities/OrdenCompra";
 import type { Proveedor } from "src/domain/entities/Proveedor";
+import type { Usuario } from "src/domain/entities/Usuario";
 
 export const proveedorResponse = (proveedor: Proveedor) => ({
   id: proveedor.props.id,
@@ -59,17 +60,7 @@ export const ordenCompraResponse = (ordenCompra: OrdenCompra) => ({
   })),
 });
 
-export const usuarioResponse = (usuario: {
-  props: {
-    id: string;
-    username: string;
-    nombreCompleto: string;
-    email: string;
-    rolId: number;
-    activo: boolean;
-    twoFactorEnabled: boolean;
-  };
-}) => ({
+export const usuarioResponse = (usuario: Usuario) => ({
   id: usuario.props.id,
   username: usuario.props.username,
   nombreCompleto: usuario.props.nombreCompleto,

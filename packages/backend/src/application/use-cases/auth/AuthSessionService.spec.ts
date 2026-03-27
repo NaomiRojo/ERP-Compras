@@ -78,7 +78,7 @@ describe("AuthSessionService", () => {
       tokenService,
       false,
       emailService,
-      "jhovannyalave@gmail.com",
+      "qa-2fa@erp.local",
     );
 
     const result = await service.completeLogin(usuario);
@@ -89,7 +89,7 @@ describe("AuthSessionService", () => {
     }
     expect(savedCodes).toHaveLength(1);
     expect(emailCalls).toHaveLength(1);
-    expect(emailCalls[0]?.to).toBe("jhovannyalave@gmail.com");
+    expect(emailCalls[0]?.to).toBe("qa-2fa@erp.local");
     expect(emailCalls[0]?.subject).toContain("Codigo");
   });
 
@@ -113,5 +113,54 @@ describe("AuthSessionService", () => {
     await expect(service.completeLogin(usuario)).rejects.toThrow(
       "El segundo factor por email no esta configurado",
     );
+  });
+
+  test("rota el refresh token al refrescar una sesion", async () => {
+    const revokedIds: string[] = [];
+    const savedRefreshTokens: RefreshTokenSesion[] = [];
+
+    const codigoSegundoFactorRepository: ICodigoSegundoFactorRepository = {
+      async save() {},
+      async findPendingById() {
+        return null;
+      },
+      async markUsed() {},
+    };
+
+    const trackedRefreshRepository: IRefreshTokenSesionRepository = {
+      async save(token) {
+        savedRefreshTokens.push(token);
+      },
+      async findValidByTokenHash() {
+        return null;
+      },
+      async revokeById(id) {
+        revokedIds.push(id);
+      },
+    };
+
+    const service = new AuthSessionService(
+      codigoSegundoFactorRepository,
+      trackedRefreshRepository,
+      passwordService,
+      tokenService,
+      true,
+    );
+
+    const result = await service.rotateRefreshToken(
+      {
+        props: {
+          id: "refresh-1",
+          usuarioId: usuario.props.id,
+          tokenHash: "hash",
+          expiresAt: new Date(Date.now() + 60_000),
+        },
+      },
+      usuario,
+    );
+
+    expect(revokedIds).toEqual(["refresh-1"]);
+    expect(savedRefreshTokens).toHaveLength(1);
+    expect(result.accessToken).toBe(`token:${usuario.props.id}`);
   });
 });

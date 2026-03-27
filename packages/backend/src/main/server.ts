@@ -1,10 +1,21 @@
-import { app } from "./app";
-import { AppDataSource } from "src/infrastructure/persistence/postgres/orm/data-source";
+import type { DataSource } from "typeorm";
+import { createApp } from "./app";
+import { createContainer } from "./container";
+import { createAppDataSource } from "src/infrastructure/persistence/postgres/orm/data-source";
 
-const port = Number(Bun.env.PORT ?? 4000);
+export interface StartServerOptions {
+  dataSource?: DataSource;
+  port?: number;
+}
 
-export const startServer = async (): Promise<void> => {
-  await AppDataSource.initialize();
+export const startServer = async (options: StartServerOptions = {}): Promise<void> => {
+  const dataSource = options.dataSource ?? createAppDataSource();
+  const port = options.port ?? Number(Bun.env.PORT ?? 4000);
+
+  if (!dataSource.isInitialized) {
+    await dataSource.initialize();
+  }
+  const app = createApp(createContainer({ dataSource }));
 
   Bun.serve({
     port,
@@ -13,5 +24,3 @@ export const startServer = async (): Promise<void> => {
 
   console.log(`Backend listening on port ${port}`);
 };
-
-void startServer();

@@ -129,6 +129,8 @@ export class OrdenCompraRepository implements IOrdenCompraRepository {
   }
 
   public async nextDocNum(tipoDocId: number): Promise<number> {
+    await this.unitOfWork.getEntityManager().query("SELECT pg_advisory_xact_lock($1)", [tipoDocId]);
+
     const raw = await this.unitOfWork.getEntityManager().query(
       "SELECT COALESCE(MAX(doc_num), 0) + 1 AS next_doc_num FROM compras_encabezado WHERE tipo_doc_id = $1",
       [tipoDocId],

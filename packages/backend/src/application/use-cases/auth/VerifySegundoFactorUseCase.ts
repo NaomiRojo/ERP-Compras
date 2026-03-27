@@ -3,14 +3,14 @@ import type { VerifySecondFactorDto } from "src/application/dtos/auth/VerifySeco
 import type { IPasswordService } from "src/application/interfaces/IPasswordService";
 import type { ICodigoSegundoFactorRepository } from "src/domain/repositories/ICodigoSegundoFactorRepository";
 import type { IUsuarioRepository } from "src/domain/repositories/IUsuarioRepository";
-import { AuthSessionService, type AuthTokensResponse } from "./AuthSessionService";
+import type { AuthTokensResponse, IAuthSessionService } from "./AuthSessionService";
 
 export class VerifySegundoFactorUseCase {
   public constructor(
     private readonly codigoSegundoFactorRepository: ICodigoSegundoFactorRepository,
     private readonly usuarioRepository: IUsuarioRepository,
     private readonly passwordService: IPasswordService,
-    private readonly authSessionService: AuthSessionService,
+    private readonly authSessionService: IAuthSessionService,
   ) {}
 
   public async execute(dto: VerifySecondFactorDto): Promise<AuthTokensResponse> {
@@ -61,7 +61,6 @@ export class VerifySegundoFactorUseCase {
       throw new Error("Usuario no disponible");
     }
 
-    const tokens = await this.authSessionService.issueTokens(usuario);
-    return tokens;
+    return this.authSessionService.rotateRefreshToken(session, usuario);
   }
 }

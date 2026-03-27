@@ -37,10 +37,6 @@
      url = "https://registry.npmjs.org/@types/bun/-/bun-1.3.2.tgz";
      hash = "sha512-t15P7k5UIgHKkxwnMNkJbWlh/617rkDGEdSsDbu+qNHTaz9SKf7aC8fiIlUdD5RPpH6GEkP0cK7WlvmrEBRtWg==";
   };
-  "@types/bun@1.3.9" = fetchurl {
-     url = "https://registry.npmjs.org/@types/bun/-/bun-1.3.9.tgz";
-     hash = "sha512-KQ571yULOdWJiMH+RIWIOZ7B2RXQGpL1YQrBtLIV3FqDcCu6FsbFUBwhdKUlCKUpS3PJDsHlJ1QKlpxoVR+xtw==";
-  };
   "@types/node@22.13.5" = fetchurl {
      url = "https://registry.npmjs.org/@types/node/-/node-22.13.5.tgz";
      hash = "sha512-+lTU0PxZXn0Dr1NBtC7Y8cR21AJr87dLLU953CWA6pMxxv/UDc7jYAY90upcrie1nRcD6XNG5HOYEDtgW5TxAg==";
@@ -102,7 +98,6 @@
      url = "https://registry.npmjs.org/buffer/-/buffer-6.0.3.tgz";
      hash = "sha512-FTiCpNxtwiZZHEZbcbTIcZjERVICn9yq/pDFkTl95/AxzD1naBctN7YO68riM/gLSDY7sdrMby8hofADYuuqOA==";
   };
-  "bun-react-template" = copyPathToStore ./packages/frontend;
   "bun-types@1.3.11" = fetchurl {
      url = "https://registry.npmjs.org/bun-types/-/bun-types-1.3.11.tgz";
      hash = "sha512-1KGPpoxQWl9f6wcZh57LvrPIInQMn2TQ7jsgxqpRzg+l0QPOFvJVH7HmvHo/AiPgwXy+/Thf6Ov3EdVn1vOabg==";
@@ -110,10 +105,6 @@
   "bun-types@1.3.2" = fetchurl {
      url = "https://registry.npmjs.org/bun-types/-/bun-types-1.3.2.tgz";
      hash = "sha512-i/Gln4tbzKNuxP70OWhJRZz1MRfvqExowP7U6JKoI8cntFrtxg7RJK3jvz7wQW54UuvNC8tbKHHri5fy74FVqg==";
-  };
-  "bun-types@1.3.9" = fetchurl {
-     url = "https://registry.npmjs.org/bun-types/-/bun-types-1.3.9.tgz";
-     hash = "sha512-+UBWWOakIP4Tswh0Bt0QD0alpTY8cb5hvgiYeWCMet9YukHbzuruIEeXC2D7nMJPB12kbh8C7XJykSexEqGKJg==";
   };
   "bun2nix@2.0.0" = fetchurl {
      url = "https://registry.npmjs.org/bun2nix/-/bun2nix-2.0.0.tgz";
@@ -211,6 +202,7 @@
      url = "https://registry.npmjs.org/foreground-child/-/foreground-child-3.3.1.tgz";
      hash = "sha512-gIXjKqtFuWEgzFRJA9WCQeSJLZDjgJUOMCMzxtvFq/37KojM1BFGufqsCy0r4qSQmYLsZYMeyRqzIWOMup03sw==";
   };
+  "frontend" = copyPathToStore ./packages/frontend;
   "function-bind@1.1.2" = fetchurl {
      url = "https://registry.npmjs.org/function-bind/-/function-bind-1.1.2.tgz";
      hash = "sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==";

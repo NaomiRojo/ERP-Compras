@@ -1,9 +1,11 @@
 import type { ITokenService } from "src/application/interfaces/ITokenService";
+import { isKnownRoleId, roleCodeFromId, type RoleCode, type RoleId } from "src/domain/roles";
 
 export interface AuthContext {
   userId: string;
   email: string;
-  roleId: number;
+  roleId: RoleId;
+  roleCode: RoleCode;
 }
 
 export const authenticate = async (
@@ -16,10 +18,15 @@ export const authenticate = async (
   }
 
   const payload = await tokenService.verify(authorization.slice("Bearer ".length));
+  const roleId = Number(payload.roleId);
+  if (!isKnownRoleId(roleId)) {
+    throw new Error("Token invalido");
+  }
 
   return {
     userId: String(payload.sub),
     email: String(payload.email),
-    roleId: Number(payload.roleId),
+    roleId,
+    roleCode: roleCodeFromId(roleId) as RoleCode,
   };
 };

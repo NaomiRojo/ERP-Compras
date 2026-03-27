@@ -1,12 +1,14 @@
 import type { CrearOrdenCompraDto } from "src/application/dtos/orden-compra/CrearOrdenCompraDto";
 import type { IUnitOfWork } from "src/application/interfaces/IUnitOfWork";
 import { OrdenCompra } from "src/domain/entities/OrdenCompra";
-import { OrdenCompraDetalle } from "src/domain/entities/OrdenCompraDetalle";
+import type { IImpuestoRepository } from "src/domain/repositories/IImpuestoRepository";
 import type { IOrdenCompraRepository } from "src/domain/repositories/IOrdenCompraRepository";
+import { buildOrdenCompraDetails } from "./buildOrdenCompraDetails";
 
 export class CrearOrdenCompraUseCase {
   public constructor(
     private readonly ordenCompraRepository: IOrdenCompraRepository,
+    private readonly impuestoRepository: IImpuestoRepository,
     private readonly unitOfWork: IUnitOfWork,
   ) {}
 
@@ -19,30 +21,8 @@ export class CrearOrdenCompraUseCase {
 
     try {
       const docNum = await this.ordenCompraRepository.nextDocNum(2);
-      const detalles = dto.detalles.map((detalle, index) => {
-        const descuentoLinea = detalle.descuentoLinea ?? 0;
-        const subtotalLinea = detalle.cantidadTotal * detalle.precioUnitario;
-        const totalLinea = subtotalLinea - descuentoLinea;
-
-        return new OrdenCompraDetalle({
-          id: crypto.randomUUID(),
-          lineNum: index,
-          articuloId: detalle.articuloId,
-          almacenId: detalle.almacenId,
-          impuestoId: detalle.impuestoId,
-          descripcion: detalle.descripcion?.trim() || undefined,
-          cantidadTotal: detalle.cantidadTotal,
-          cantidadPendiente: detalle.cantidadTotal,
-          precioUnitario: detalle.precioUnitario,
-          descuentoLinea,
-          subtotalLinea,
-          totalLinea,
-        });
-      });
-
-      const subtotal = detalles.reduce((sum, item) => sum + item.props.subtotalLinea, 0);
-      const descuentoTotal = detalles.reduce((sum, item) => sum + item.props.descuentoLinea, 0);
-      const totalDocumento = detalles.reduce((sum, item) => sum + item.props.totalLinea, 0);
+      const { detalles, subtotal, descuentoTotal, impuestosTotal, totalDocumento } =
+        await buildOrdenCompraDetails(dto.detalles, this.impuestoRepository);
 
       const ordenCompra = new OrdenCompra({
         id: crypto.randomUUID(),
@@ -55,7 +35,7 @@ export class CrearOrdenCompraUseCase {
         fechaVencimiento: dto.fechaVencimiento ? new Date(dto.fechaVencimiento) : undefined,
         subtotal,
         descuentoTotal,
-        impuestosTotal: 0,
+        impuestosTotal,
         totalDocumento,
         comentarios: dto.comentarios?.trim() || undefined,
         createdBy: currentUserId,

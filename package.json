@@ -1,5 +1,5 @@
 {
-  "name": "default",
+  "name": "erp-final",
   "version": "0.1.0",
   "scripts": {
     "postinstall": "bun2nix -o bun.nix"

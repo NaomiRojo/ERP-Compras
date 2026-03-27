@@ -83,4 +83,39 @@ describe("RegisterUsuarioUseCase", () => {
       }),
     ).rejects.toThrow("Ya existe un usuario con ese email");
   });
+
+  test("rechaza usernames duplicados", async () => {
+    const repository = createUsuarioRepository();
+    const useCase = new RegisterUsuarioUseCase(repository, passwordService, unitOfWork);
+
+    await useCase.execute({
+      username: "admin",
+      nombreCompleto: "Administrador ERP",
+      email: "admin@erp.local",
+      password: "secret123",
+    });
+
+    await expect(
+      useCase.execute({
+        username: "admin",
+        nombreCompleto: "Administrador ERP 2",
+        email: "admin2@erp.local",
+        password: "secret123",
+      }),
+    ).rejects.toThrow("Ya existe un usuario con ese username");
+  });
+
+  test("aplica valores por defecto de rol y 2FA", async () => {
+    const useCase = new RegisterUsuarioUseCase(createUsuarioRepository(), passwordService, unitOfWork);
+
+    const usuario = await useCase.execute({
+      username: "compras",
+      nombreCompleto: "Usuario Compras",
+      email: "compras@erp.local",
+      password: "secret123",
+    });
+
+    expect(usuario.props.rolId).toBe(2);
+    expect(usuario.props.twoFactorEnabled).toBe(true);
+  });
 });
