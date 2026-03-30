@@ -8,6 +8,7 @@ export interface SmtpEmailServiceConfig {
   user: string;
   pass: string;
   from: string;
+  tlsRejectUnauthorized: boolean;
 }
 
 export class SmtpEmailService implements IEmailService {
@@ -21,6 +22,9 @@ export class SmtpEmailService implements IEmailService {
       auth: {
         user: config.user,
         pass: config.pass,
+      },
+      tls: {
+        rejectUnauthorized: config.tlsRejectUnauthorized,
       },
     });
   }

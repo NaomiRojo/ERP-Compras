@@ -10,6 +10,49 @@ import { usuarioResponse } from "src/presentation/http/serializers";
 
 type AuthRouteDependencies = Pick<HttpDependencies, "createAuthContext" | "tokenService">;
 
+const resolveAuthErrorStatus = (message: string): number => {
+  if (
+    message === "username, nombreCompleto, email y password son obligatorios" ||
+    message === "email y password son obligatorios" ||
+    message === "credential es obligatorio" ||
+    message === "challengeId y code son obligatorios" ||
+    message === "refreshToken es obligatorio"
+  ) {
+    return 400;
+  }
+
+  if (
+    message === "Credenciales invalidas" ||
+    message === "El codigo de segundo factor no es valido" ||
+    message === "Refresh token invalido" ||
+    message === "La cuenta de Google no tiene email verificado"
+  ) {
+    return 401;
+  }
+
+  if (message === "Solo se permiten cuentas Gmail o Google Workspace") {
+    return 403;
+  }
+
+  if (message === "Usuario no disponible") {
+    return 404;
+  }
+
+  if (message === "El codigo de segundo factor expiro") {
+    return 410;
+  }
+
+  if (
+    message === "El segundo factor por email no esta configurado" ||
+    message.startsWith("No se pudo enviar el codigo de segundo factor por correo") ||
+    message === "Google auth no esta configurado"
+  ) {
+    return 503;
+  }
+
+  return 400;
+};
+
 export const createAuthRouteHandler =
   ({ createAuthContext, tokenService }: AuthRouteDependencies) =>
   async (
@@ -35,7 +78,7 @@ export const createAuthRouteHandler =
         );
       } catch (error) {
         const message = error instanceof Error ? error.message : "Error interno";
-        return json({ message }, 400, origin);
+        return json({ message }, resolveAuthErrorStatus(message), origin);
       }
     }
 
@@ -47,7 +90,7 @@ export const createAuthRouteHandler =
         return json(result, 200, origin);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Error interno";
-        return json({ message }, 401, origin);
+        return json({ message }, resolveAuthErrorStatus(message), origin);
       }
     }
 
@@ -63,7 +106,7 @@ export const createAuthRouteHandler =
         return json(result, 200, origin);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Error interno";
-        return json({ message }, 401, origin);
+        return json({ message }, resolveAuthErrorStatus(message), origin);
       }
     }
 
@@ -75,7 +118,7 @@ export const createAuthRouteHandler =
         return json(result, 200, origin);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Error interno";
-        return json({ message }, 401, origin);
+        return json({ message }, resolveAuthErrorStatus(message), origin);
       }
     }
 
@@ -87,7 +130,7 @@ export const createAuthRouteHandler =
         return json(result, 200, origin);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Error interno";
-        return json({ message }, 401, origin);
+        return json({ message }, resolveAuthErrorStatus(message), origin);
       }
     }
 

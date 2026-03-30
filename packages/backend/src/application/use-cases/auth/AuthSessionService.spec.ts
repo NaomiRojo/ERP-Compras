@@ -115,6 +115,35 @@ describe("AuthSessionService", () => {
     );
   });
 
+  test("expone el detalle cuando falla el envio SMTP", async () => {
+    const codigoSegundoFactorRepository: ICodigoSegundoFactorRepository = {
+      async save() {},
+      async findPendingById() {
+        return null;
+      },
+      async markUsed() {},
+    };
+
+    const emailService: IEmailService = {
+      async send() {
+        throw new Error("self signed certificate in certificate chain");
+      },
+    };
+
+    const service = new AuthSessionService(
+      codigoSegundoFactorRepository,
+      refreshTokenRepository,
+      passwordService,
+      tokenService,
+      false,
+      emailService,
+    );
+
+    await expect(service.completeLogin(usuario)).rejects.toThrow(
+      "No se pudo enviar el codigo de segundo factor por correo: self signed certificate in certificate chain",
+    );
+  });
+
   test("rota el refresh token al refrescar una sesion", async () => {
     const revokedIds: string[] = [];
     const savedRefreshTokens: RefreshTokenSesion[] = [];

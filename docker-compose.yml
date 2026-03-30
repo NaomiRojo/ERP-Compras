@@ -32,8 +32,9 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_SECURE: ${SMTP_SECURE:-false}
       SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASS: hxlwbpiabioepmqf
+      SMTP_PASS: ${SMTP_PASS:-cyfziykgwpgrpmqc}
       SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_TLS_REJECT_UNAUTHORIZED: ${SMTP_TLS_REJECT_UNAUTHORIZED:-true}
       TWO_FACTOR_EMAIL_OVERRIDE: ${TWO_FACTOR_EMAIL_OVERRIDE:-}
     volumes:
       - ./packages/backend:/app

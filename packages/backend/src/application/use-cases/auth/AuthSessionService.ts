@@ -96,9 +96,10 @@ export class AuthSessionService implements IAuthSessionService {
             </div>
           `,
         });
-      } catch {
+      } catch (error) {
         await this.codigoSegundoFactorRepository.markUsed(challengeId);
-        throw new Error("No se pudo enviar el codigo de segundo factor por correo");
+        const message = error instanceof Error ? error.message : "Error SMTP desconocido";
+        throw new Error(`No se pudo enviar el codigo de segundo factor por correo: ${message}`);
       }
     }
 

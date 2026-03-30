@@ -8,7 +8,7 @@ export const corsHeaders = (origin: string | null): Record<string, string> => {
     "access-control-allow-methods": "GET,POST,PUT,DELETE,OPTIONS",
     "access-control-allow-headers": "content-type,authorization",
     "access-control-allow-credentials": "true",
-    vary: "origin",
+    vary: "http://origin",
   };
 
   if (origin && allowedOrigins.includes(origin)) {

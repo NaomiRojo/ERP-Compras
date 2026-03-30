@@ -78,6 +78,7 @@ const createEmailService = (): IEmailService | undefined => {
   const smtpUser = Bun.env.SMTP_USER?.trim();
   const smtpPass = Bun.env.SMTP_PASS?.trim();
   const smtpFrom = Bun.env.SMTP_FROM?.trim() || smtpUser;
+  const smtpTlsRejectUnauthorized = (Bun.env.SMTP_TLS_REJECT_UNAUTHORIZED ?? "true") !== "false";
 
   return smtpHost && smtpUser && smtpPass && smtpFrom
     ? new SmtpEmailService({
@@ -87,6 +88,7 @@ const createEmailService = (): IEmailService | undefined => {
         user: smtpUser,
         pass: smtpPass,
         from: smtpFrom,
+        tlsRejectUnauthorized: smtpTlsRejectUnauthorized,
       })
     : undefined;
 };
