@@ -341,6 +341,16 @@ export const isReceivableOrder = (order: Order): boolean =>
   (order.estado === "APROBADO" || order.estado === "ABIERTO") &&
   order.lines.some((line) => line.pendingQty > 0);
 
+const readInitialSearchTerm = (): string => {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  const hashQuery = window.location.hash.split("?")[1] ?? "";
+  const params = new URLSearchParams(hashQuery || window.location.search);
+  return params.get("q") ?? "";
+};
+
 export function OrdenesScreen({
   ordenes,
   proveedores,
@@ -357,9 +367,10 @@ export function OrdenesScreen({
   onApprove,
   onReceive,
 }: OrdenesScreenProps) {
+  const initialSearchTerm = readInitialSearchTerm();
   const [mode, setMode] = useState<ScreenMode>("list");
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [orderValidationActive, setOrderValidationActive] = useState(false);
@@ -414,6 +425,7 @@ export function OrdenesScreen({
 
     return ordenes.filter((order) =>
       [
+        `OC-${order.docNum}`,
         order.docNum,
         order.proveedor,
         order.estado,

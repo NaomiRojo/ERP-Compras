@@ -4,6 +4,7 @@ import { ArticleEditor } from "../components/Articles/ArticleEditor";
 import { Badge } from "../components/Common/Badge";
 import { CrudToolbar } from "../components/Common/CrudToolbar";
 import { DataTable } from "../components/Common/DataTable";
+import { PermissionGate } from "../components/Common/PermissionGate";
 import type { Article } from "../types";
 import type { CrearArticuloDto, GrupoArticuloApi, ImpuestoApi } from "../types/api";
 import {
@@ -268,7 +269,8 @@ export function ArticulosScreen({
         headers={["SKU", "Nombre", "Clasificacion", "Costo", "Estado", "Acciones"]}
         actions={
           <CrudToolbar
-            createActionLabel={canManage ? "Nuevo articulo" : undefined}
+            createActionDisabledReason="Tu rol no tiene permiso para crear articulos."
+            createActionLabel="Nuevo articulo"
             onCreateAction={canManage ? startCreate : undefined}
             onSearchChange={setSearchTerm}
             searchPlaceholder="SKU, nombre, grupo, impuesto..."
@@ -290,19 +292,21 @@ export function ArticulosScreen({
           <Badge key={`${article.id}-status`} tone={article.activo ? "success" : "neutral"}>
             {article.activo ? "Activo" : "Inactivo"}
           </Badge>,
-          canManage ? (
             <div className="action-row" key={`${article.id}-actions`}>
+              <PermissionGate disabled={!canManage} reason="Tu rol no tiene permiso para editar articulos.">
               <button
                 className="link-button"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !canManage}
                 onClick={() => startEdit(article)}
                 type="button"
               >
                 Editar
               </button>
+              </PermissionGate>
+              <PermissionGate disabled={!canManage} reason="Tu rol no tiene permiso para eliminar articulos.">
               <button
                 className="link-button link-button--danger"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !canManage}
                 onClick={() => {
                   void removeArticulo(article);
                 }}
@@ -310,12 +314,8 @@ export function ArticulosScreen({
               >
                 Eliminar
               </button>
+              </PermissionGate>
             </div>
-          ) : (
-            <span key={`${article.id}-readonly`} className="muted-text">
-              Solo lectura
-            </span>
-          ),
         ])}
       />
 

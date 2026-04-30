@@ -275,8 +275,9 @@ describe("ArticulosScreen", () => {
       />,
     );
 
-    expect(view.queryByRole("button", { name: "Nuevo articulo" })).toBeNull();
-    expect(view.getByText("Solo lectura")).toBeTruthy();
+    expect((view.getByRole("button", { name: "Nuevo articulo" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((view.getByRole("button", { name: "Editar" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((view.getByRole("button", { name: "Eliminar" }) as HTMLButtonElement).disabled).toBe(true);
 
     await user.type(view.getByLabelText("Buscar"), "no-existe");
 

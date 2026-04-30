@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Badge } from "../components/Common/Badge";
 import { CrudToolbar } from "../components/Common/CrudToolbar";
 import { DataTable } from "../components/Common/DataTable";
+import { PermissionGate } from "../components/Common/PermissionGate";
 import { ProviderEditor } from "../components/Providers/ProviderEditor";
 import type { Provider } from "../types";
 import type { CrearProveedorDto, MonedaApi } from "../types/api";
@@ -278,7 +279,8 @@ export function ProveedoresScreen({
         headers={["Codigo", "Nombre", "Contacto", "Moneda", "Balance", "Estado", "Acciones"]}
         actions={
           <CrudToolbar
-            createActionLabel={canManage ? "Nuevo proveedor" : undefined}
+            createActionDisabledReason="Tu rol no tiene permiso para crear proveedores."
+            createActionLabel="Nuevo proveedor"
             onCreateAction={canManage ? startCreate : undefined}
             onSearchChange={setSearchTerm}
             searchPlaceholder="Codigo, nombre, NIT, email..."
@@ -304,19 +306,21 @@ export function ProveedoresScreen({
           <Badge key={`${provider.id}-status`} tone={provider.activo ? "success" : "neutral"}>
             {provider.activo ? "Activo" : "Inactivo"}
           </Badge>,
-          canManage ? (
             <div className="action-row" key={`${provider.id}-actions`}>
+              <PermissionGate disabled={!canManage} reason="Tu rol no tiene permiso para editar proveedores.">
               <button
                 className="link-button"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !canManage}
                 onClick={() => startEdit(provider)}
                 type="button"
               >
                 Editar
               </button>
+              </PermissionGate>
+              <PermissionGate disabled={!canManage} reason="Tu rol no tiene permiso para eliminar proveedores.">
               <button
                 className="link-button link-button--danger"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !canManage}
                 onClick={() => {
                   void removeProvider(provider);
                 }}
@@ -324,12 +328,8 @@ export function ProveedoresScreen({
               >
                 Eliminar
               </button>
+              </PermissionGate>
             </div>
-          ) : (
-            <span key={`${provider.id}-readonly`} className="muted-text">
-              Solo lectura
-            </span>
-          ),
         ])}
       />
 

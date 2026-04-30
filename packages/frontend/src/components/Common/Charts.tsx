@@ -15,23 +15,35 @@ export type DonutSegment = {
 type ChartCardProps = {
   children: ReactNode;
   description?: string;
+  meta?: string;
   title: string;
 };
 
-function ChartCard({ children, description, title }: ChartCardProps) {
+function ChartCard({ children, description, meta, title }: ChartCardProps) {
   return (
-    <Paper sx={{ p: 2.5, height: "100%" }} variant="outlined">
+    <Paper
+      sx={{
+        borderColor: "rgba(20, 32, 51, 0.08)",
+        height: "100%",
+        overflow: "hidden",
+        p: 2.5,
+      }}
+      variant="outlined"
+    >
       <Stack spacing={2}>
-        <Box>
-          <Typography component="h3" variant="h6">
-            {title}
-          </Typography>
-          {description ? (
-            <Typography color="text.secondary" variant="body2">
-              {description}
+        <Stack direction="row" spacing={2} sx={{ alignItems: "flex-start", justifyContent: "space-between" }}>
+          <Box>
+            <Typography component="h3" sx={{ fontWeight: 850 }} variant="h6">
+              {title}
             </Typography>
-          ) : null}
-        </Box>
+            {description ? (
+              <Typography color="text.secondary" variant="body2">
+                {description}
+              </Typography>
+            ) : null}
+          </Box>
+          {meta ? <Chip label={meta} size="small" variant="outlined" /> : null}
+        </Stack>
         {children}
       </Stack>
     </Paper>
@@ -73,6 +85,7 @@ export function LineChartCard({
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
   const maximum = maxValue(points);
+  const total = points.reduce((accumulator, point) => accumulator + point.value, 0);
   const gradientId = `line-gradient-${title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`;
   const stepX = points.length > 1 ? chartWidth / (points.length - 1) : chartWidth;
   const coordinates = points.map((point, index) => {
@@ -91,7 +104,7 @@ export function LineChartCard({
   const gridLines = [0, 0.25, 0.5, 0.75, 1];
 
   return (
-    <ChartCard description={description} title={title}>
+    <ChartCard description={description} meta={`${valuePrefix}${formatCompact(total)}`} title={title}>
       <Box sx={{ overflow: "hidden", width: "100%" }}>
         <svg aria-label={title} role="img" viewBox={`0 0 ${width} ${height}`} width="100%">
           <defs>
@@ -154,9 +167,10 @@ export function BarChartCard({
   const theme = useTheme();
   const barColor = color ?? theme.palette.secondary.main;
   const maximum = maxValue(points);
+  const total = points.reduce((accumulator, point) => accumulator + point.value, 0);
 
   return (
-    <ChartCard description={description} title={title}>
+    <ChartCard description={description} meta={`${valuePrefix}${formatCompact(total)}`} title={title}>
       <Stack spacing={1.4}>
         {points.map((point) => {
           const percentage = Math.max(3, (point.value / maximum) * 100);
@@ -164,7 +178,9 @@ export function BarChartCard({
           return (
             <Box key={point.label}>
               <Stack direction="row" sx={{ justifyContent: "space-between", mb: 0.5 }}>
-                <Typography variant="body2">{point.label}</Typography>
+                <Typography sx={{ maxWidth: "70%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} variant="body2">
+                  {point.label}
+                </Typography>
                 <Typography sx={{ fontWeight: 700 }} variant="body2">
                   {valuePrefix}
                   {formatCompact(point.value)}
@@ -172,7 +188,7 @@ export function BarChartCard({
               </Stack>
               <Box
                 sx={{
-                  bgcolor: "rgba(96, 112, 140, 0.14)",
+                  bgcolor: "rgba(96, 112, 140, 0.12)",
                   borderRadius: 999,
                   height: 10,
                   overflow: "hidden",
@@ -180,7 +196,7 @@ export function BarChartCard({
               >
                 <Box
                   sx={{
-                    bgcolor: barColor,
+                    background: `linear-gradient(90deg, ${barColor}, ${barColor}cc)`,
                     borderRadius: 999,
                     height: "100%",
                     transition: "width 180ms ease",
@@ -215,7 +231,7 @@ export function DonutChartCard({ description, segments, title }: DonutChartCardP
   let offset = 25;
 
   return (
-    <ChartCard description={description} title={title}>
+    <ChartCard description={description} meta={`${total} registros`} title={title}>
       <Stack direction={{ sm: "row", xs: "column" }} spacing={2} sx={{ alignItems: "center" }}>
         <Box sx={{ width: 180 }}>
           <svg aria-label={title} role="img" viewBox="0 0 120 120" width="100%">

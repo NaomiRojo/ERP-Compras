@@ -118,7 +118,7 @@ export function App() {
         element={
           <RequireAuth isAuthenticated={auth.isAuthenticated}>
             <ProtectedAppShell
-              currentUserName={auth.currentUser?.nombreCompleto ?? "Usuario"}
+              currentUser={auth.currentUser}
               currentView={currentView}
               defaultProtectedPath={defaultProtectedPath}
               isCurrentViewAllowed={isCurrentViewAllowed}

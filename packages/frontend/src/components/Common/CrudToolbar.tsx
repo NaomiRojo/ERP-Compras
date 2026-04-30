@@ -1,6 +1,7 @@
 import AddIcon from "@mui/icons-material/Add";
 import { Button, Stack } from "@mui/material";
 
+import { PermissionGate } from "./PermissionGate";
 import { SearchBar } from "./SearchBar";
 
 type CrudToolbarProps = {
@@ -10,6 +11,7 @@ type CrudToolbarProps = {
   createActionLabel?: string;
   onCreateAction?: () => void;
   createActionDisabled?: boolean;
+  createActionDisabledReason?: string;
 };
 
 export function CrudToolbar({
@@ -19,6 +21,7 @@ export function CrudToolbar({
   createActionLabel,
   onCreateAction,
   createActionDisabled = false,
+  createActionDisabledReason = "Tu rol no tiene permiso para crear registros.",
 }: CrudToolbarProps) {
   return (
     <Stack
@@ -32,17 +35,19 @@ export function CrudToolbar({
         placeholder={searchPlaceholder}
         value={searchValue}
       />
-      {createActionLabel && onCreateAction ? (
-        <Button
-          className="primary-button"
-          disabled={createActionDisabled}
-          startIcon={<AddIcon />}
-          onClick={onCreateAction}
-          type="button"
-          variant="contained"
-        >
-          {createActionLabel}
-        </Button>
+      {createActionLabel ? (
+        <PermissionGate disabled={createActionDisabled || !onCreateAction} reason={createActionDisabledReason}>
+          <Button
+            className="primary-button"
+            disabled={createActionDisabled || !onCreateAction}
+            startIcon={<AddIcon />}
+            onClick={onCreateAction}
+            type="button"
+            variant="contained"
+          >
+            {createActionLabel}
+          </Button>
+        </PermissionGate>
       ) : null}
     </Stack>
   );

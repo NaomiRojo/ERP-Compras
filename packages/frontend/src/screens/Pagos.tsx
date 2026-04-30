@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { DataTable } from "../components/Common/DataTable";
+import { PermissionGate } from "../components/Common/PermissionGate";
 import type { Payment } from "../types";
 import type { RegistrarPagoProveedorDto } from "../types/api";
 import {
@@ -144,9 +145,10 @@ export function PagosScreen({ pagos, canRegister, cuentasPago, onRegister }: Pag
         description="Historico de transacciones registradas."
         headers={["Fecha", "Proveedor", "Referencia", "Monto", "Usuario"]}
         actions={
-          canRegister ? (
+          <PermissionGate disabled={!canRegister} reason="Tu rol no tiene permiso para registrar pagos.">
             <button
               className="primary-button"
+              disabled={!canRegister}
               onClick={() => {
                 setErrorMessage(null);
                 setValidationActive(false);
@@ -156,7 +158,7 @@ export function PagosScreen({ pagos, canRegister, cuentasPago, onRegister }: Pag
             >
               {isFormVisible ? "Cerrar" : "Registrar pago"}
             </button>
-          ) : null
+          </PermissionGate>
         }
         rows={pagos.map((payment) => [
           payment.fecha,

@@ -3,6 +3,7 @@ import type { Order } from "../../types";
 import { Badge } from "../Common/Badge";
 import { CrudToolbar } from "../Common/CrudToolbar";
 import { DataTable } from "../Common/DataTable";
+import { PermissionGate } from "../Common/PermissionGate";
 
 type OrdersTableProps = {
   canApprove: boolean;
@@ -51,7 +52,8 @@ export function OrdersTable({
       actions={
         <CrudToolbar
           createActionDisabled={createDisabled}
-          createActionLabel={canManage ? "Nueva orden" : undefined}
+          createActionDisabledReason="Tu rol no tiene permiso para crear ordenes."
+          createActionLabel="Nueva orden"
           onCreateAction={canManage ? onCreate : undefined}
           onSearchChange={onSearchTermChange}
           searchPlaceholder="OC, proveedor, estado, SKU..."
@@ -78,35 +80,53 @@ export function OrdersTable({
             <button className="link-button" onClick={() => onOpenDetail(order)} type="button">
               Ver
             </button>
-            {canManage && isDraftOrder(order) ? (
-              <button className="link-button" onClick={() => onEdit(order)} type="button">
-                Editar
-              </button>
-            ) : null}
-            {canApprove && isDraftOrder(order) ? (
+            {isDraftOrder(order) ? (
+              <PermissionGate disabled={!canManage} reason="Tu rol no tiene permiso para editar ordenes.">
               <button
                 className="link-button"
-                disabled={isSubmitting}
+                disabled={!canManage}
+                onClick={() => onEdit(order)}
+                type="button"
+              >
+                Editar
+              </button>
+              </PermissionGate>
+            ) : null}
+            {isDraftOrder(order) ? (
+              <PermissionGate disabled={!canApprove} reason="Tu rol no tiene permiso para aprobar ordenes.">
+              <button
+                className="link-button"
+                disabled={isSubmitting || !canApprove}
                 onClick={() => onApprove(order)}
                 type="button"
               >
                 Aprobar
               </button>
+              </PermissionGate>
             ) : null}
-            {canReceive && isReceivableOrder(order) ? (
-              <button className="link-button" onClick={() => onReceive(order)} type="button">
+            {isReceivableOrder(order) ? (
+              <PermissionGate disabled={!canReceive} reason="Tu rol no tiene permiso para registrar recepciones.">
+              <button
+                className="link-button"
+                disabled={!canReceive}
+                onClick={() => onReceive(order)}
+                type="button"
+              >
                 Recibir
               </button>
+              </PermissionGate>
             ) : null}
-            {canManage && isDraftOrder(order) ? (
+            {isDraftOrder(order) ? (
+              <PermissionGate disabled={!canManage} reason="Tu rol no tiene permiso para eliminar ordenes.">
               <button
                 className="link-button link-button--danger"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !canManage}
                 onClick={() => onDelete(order)}
                 type="button"
               >
                 Eliminar
               </button>
+              </PermissionGate>
             ) : null}
           </div>,
         ];

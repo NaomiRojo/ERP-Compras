@@ -1,23 +1,33 @@
-import { createTheme } from "@mui/material/styles";
+import { createTheme, type PaletteMode } from "@mui/material/styles";
 
-export const appTheme = createTheme({
+export const createAppTheme = (mode: PaletteMode) => createTheme({
   palette: {
-    mode: "light",
+    mode,
     primary: {
-      main: "#2156d9",
+      main: mode === "dark" ? "#7aa2ff" : "#2156d9",
       dark: "#173f9e",
     },
     secondary: {
-      main: "#0f766e",
+      main: mode === "dark" ? "#2dd4bf" : "#0f766e",
+    },
+    warning: {
+      main: "#b45309",
+    },
+    error: {
+      main: "#be123c",
+    },
+    success: {
+      main: "#15803d",
     },
     background: {
-      default: "#f5f7fb",
-      paper: "#ffffff",
+      default: mode === "dark" ? "#09111f" : "#f5f7fb",
+      paper: mode === "dark" ? "#101b2f" : "#ffffff",
     },
     text: {
-      primary: "#142033",
-      secondary: "#60708c",
+      primary: mode === "dark" ? "#e7eefc" : "#142033",
+      secondary: mode === "dark" ? "#9eb0cc" : "#60708c",
     },
+    divider: mode === "dark" ? "rgba(231, 238, 252, 0.1)" : "rgba(20, 32, 51, 0.08)",
   },
   shape: {
     borderRadius: 8,
@@ -56,8 +66,8 @@ export const appTheme = createTheme({
     MuiCard: {
       styleOverrides: {
         root: {
-          border: "1px solid rgba(20, 32, 51, 0.08)",
-          boxShadow: "0 20px 50px rgba(37, 59, 103, 0.1)",
+          border: `1px solid ${mode === "dark" ? "rgba(231, 238, 252, 0.1)" : "rgba(20, 32, 51, 0.08)"}`,
+          boxShadow: mode === "dark" ? "0 20px 50px rgba(0, 0, 0, 0.28)" : "0 20px 50px rgba(37, 59, 103, 0.1)",
         },
       },
     },
@@ -65,6 +75,20 @@ export const appTheme = createTheme({
       styleOverrides: {
         root: {
           backgroundImage: "none",
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          fontWeight: 750,
+        },
+      },
+    },
+    MuiLinearProgress: {
+      styleOverrides: {
+        root: {
+          backgroundColor: mode === "dark" ? "rgba(158, 176, 204, 0.18)" : "rgba(96, 112, 140, 0.14)",
         },
       },
     },
@@ -80,3 +104,5 @@ export const appTheme = createTheme({
     },
   },
 });
+
+export const appTheme = createAppTheme("light");

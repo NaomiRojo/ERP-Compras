@@ -1,5 +1,6 @@
-import { Alert, Box, LinearProgress, Paper, Stack, Typography } from "@mui/material";
+import { Alert, Box, Chip, LinearProgress, Paper, Stack, Typography } from "@mui/material";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import HistoryIcon from "@mui/icons-material/History";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 
@@ -8,9 +9,11 @@ import { DataTable } from "../components/Common/DataTable";
 import { KpiGrid } from "../components/Common/KpiGrid";
 import { Badge } from "../components/Common/Badge";
 import { resolveTone } from "../mocks/data";
-import type { AccountsPayable, InventoryRow, Metric, Order, Payment } from "../types";
+import { buildViewPath } from "../router/views";
+import type { AccountsPayable, AuditRow, BadgeTone, InventoryRow, Metric, Order, Payment } from "../types";
 
 type DashboardScreenProps = {
+  auditoria: AuditRow[];
   cuentas: AccountsPayable[];
   inventario: InventoryRow[];
   metrics: Metric[];
@@ -25,6 +28,24 @@ const moneyFormatter = new Intl.NumberFormat("es-BO", {
 
 const isOpenOrder = (order: Order): boolean =>
   ["BORRADOR", "APROBADO", "ABIERTO"].includes(order.estado);
+
+const getAuditTone = (action: string): BadgeTone => {
+  const normalizedAction = action.toLowerCase();
+
+  if (normalizedAction.includes("cre") || normalizedAction.includes("insert")) {
+    return "success";
+  }
+
+  if (normalizedAction.includes("edit") || normalizedAction.includes("updat") || normalizedAction.includes("mod")) {
+    return "info";
+  }
+
+  if (normalizedAction.includes("delete") || normalizedAction.includes("elim") || normalizedAction.includes("anul")) {
+    return "warning";
+  }
+
+  return "neutral";
+};
 
 const monthKey = (date: Date): string =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
@@ -79,6 +100,7 @@ const buildStatusSegments = (orders: Order[]) =>
   }, new Map<string, number>()).entries()].map(([label, value]) => ({ label, value }));
 
 export function DashboardScreen({
+  auditoria,
   cuentas,
   inventario,
   metrics,
@@ -94,9 +116,37 @@ export function DashboardScreen({
   const monthlyPurchases = buildMonthlyPurchaseSeries(ordenes);
   const providerSpend = buildProviderSpendSeries(ordenes);
   const statusSegments = buildStatusSegments(ordenes);
+  const recentAudit = auditoria.slice(0, 6);
 
   return (
     <Stack spacing={3}>
+      <Paper
+        sx={{
+          borderColor: "rgba(20, 32, 51, 0.08)",
+          p: 3,
+        }}
+        variant="outlined"
+      >
+        <Stack direction={{ md: "row", xs: "column" }} spacing={2} sx={{ alignItems: { md: "center", xs: "stretch" }, justifyContent: "space-between" }}>
+          <Box>
+            <Typography color="text.secondary" sx={{ fontSize: 12, fontWeight: 850, letterSpacing: 0.6, textTransform: "uppercase" }}>
+              Centro ejecutivo
+            </Typography>
+            <Typography component="h2" sx={{ fontWeight: 900, mt: 0.5 }} variant="h4">
+              Resumen financiero y operativo
+            </Typography>
+            <Typography color="text.secondary">
+              Seguimiento de compras, cuentas por pagar e inventario con datos sincronizados del backend.
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", gap: 1 }}>
+            <Chip color="primary" label={`${ordenes.length} ordenes`} variant="outlined" />
+            <Chip color="warning" label={`${pendingPayments.length} CxP pendientes`} variant="outlined" />
+            <Chip color={lowStockRows.length > 0 ? "error" : "success"} label={`${lowStockRows.length} alertas stock`} variant="outlined" />
+          </Stack>
+        </Stack>
+      </Paper>
+
       <KpiGrid metrics={metrics} />
 
       <Box
@@ -121,7 +171,7 @@ export function DashboardScreen({
               <Typography color="text.secondary">
                 {`Monto comprometido Bs ${moneyFormatter.format(totalOpenAmount)}`}
               </Typography>
-              <LinearProgress value={ordenes.length ? (openOrders.length / ordenes.length) * 100 : 0} variant="determinate" />
+              <LinearProgress sx={{ height: 8, borderRadius: 99 }} value={ordenes.length ? (openOrders.length / ordenes.length) * 100 : 0} variant="determinate" />
             </Stack>
           </Paper>
         </Box>
@@ -140,7 +190,7 @@ export function DashboardScreen({
               <Typography color="text.secondary">
                 {`Saldo Bs ${moneyFormatter.format(pendingBalance)}`}
               </Typography>
-              <LinearProgress color="warning" value={cuentas.length ? (pendingPayments.length / cuentas.length) * 100 : 0} variant="determinate" />
+              <LinearProgress color="warning" sx={{ height: 8, borderRadius: 99 }} value={cuentas.length ? (pendingPayments.length / cuentas.length) * 100 : 0} variant="determinate" />
             </Stack>
           </Paper>
         </Box>
@@ -159,7 +209,7 @@ export function DashboardScreen({
               <Typography color="text.secondary">
                 {`Pagado historico Bs ${moneyFormatter.format(paidAmount)}`}
               </Typography>
-              <LinearProgress color="error" value={inventario.length ? (lowStockRows.length / inventario.length) * 100 : 0} variant="determinate" />
+              <LinearProgress color="error" sx={{ height: 8, borderRadius: 99 }} value={inventario.length ? (lowStockRows.length / inventario.length) * 100 : 0} variant="determinate" />
             </Stack>
           </Paper>
         </Box>
@@ -197,6 +247,57 @@ export function DashboardScreen({
         title="Gasto por proveedor"
         valuePrefix="Bs "
       />
+
+      {recentAudit.length > 0 ? (
+        <Paper sx={{ p: 2.5 }} variant="outlined">
+          <Stack direction={{ md: "row", xs: "column" }} spacing={2} sx={{ alignItems: { md: "center", xs: "stretch" }, justifyContent: "space-between", mb: 2 }}>
+            <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+              <HistoryIcon color="primary" fontSize="small" />
+              <Box>
+                <Typography component="h3" variant="h6">
+                  Actividad reciente
+                </Typography>
+                <Typography color="text.secondary">
+                  Ultimos eventos auditados en operaciones sensibles.
+                </Typography>
+              </Box>
+            </Stack>
+            <a className="link-button" href={`#${buildViewPath("auditoria")}`}>
+              Ver bitacora
+            </a>
+          </Stack>
+
+          <Box
+            sx={{
+              display: "grid",
+              gap: 1.5,
+              gridTemplateColumns: { lg: "repeat(3, minmax(0, 1fr))", md: "repeat(2, minmax(0, 1fr))", xs: "1fr" },
+            }}
+          >
+            {recentAudit.map((audit) => (
+              <Paper key={audit.id} sx={{ p: 2 }} variant="outlined">
+                <Stack spacing={1}>
+                  <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+                    <Badge tone={getAuditTone(audit.accion)}>{audit.accion}</Badge>
+                    <Typography color="text.secondary" variant="caption">
+                      {audit.fecha}
+                    </Typography>
+                  </Stack>
+                  <Box>
+                    <Typography component="strong" sx={{ display: "block", fontWeight: 850 }}>
+                      {audit.entidad}
+                    </Typography>
+                    <Typography color="text.secondary" variant="body2">
+                      {audit.entidadId ?? "Sin identificador"}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2">{audit.usuario}</Typography>
+                </Stack>
+              </Paper>
+            ))}
+          </Box>
+        </Paper>
+      ) : null}
 
       <DataTable
         title="Ordenes criticas"

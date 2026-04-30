@@ -8,24 +8,22 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { HashRouter } from "react-router-dom";
-import { CssBaseline, ThemeProvider } from "@mui/material";
 
 import { App } from "./App";
+import { ColorModeProvider } from "./components/Common/ColorMode";
 import { NotificationsProvider } from "./components/Common/Notifications";
 import "./styles/globals.css";
-import { appTheme } from "./theme";
 
 const elem = document.getElementById("app")!;
 const app = (
   <StrictMode>
-    <ThemeProvider theme={appTheme}>
-      <CssBaseline />
+    <ColorModeProvider>
       <NotificationsProvider>
         <HashRouter>
           <App />
         </HashRouter>
       </NotificationsProvider>
-    </ThemeProvider>
+    </ColorModeProvider>
   </StrictMode>
 );
 

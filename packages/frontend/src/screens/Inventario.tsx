@@ -10,8 +10,18 @@ type InventarioScreenProps = {
   movimientos: Movement[];
 };
 
+const readInitialSearchTerm = (): string => {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  const hashQuery = window.location.hash.split("?")[1] ?? "";
+  const params = new URLSearchParams(hashQuery || window.location.search);
+  return params.get("q") ?? "";
+};
+
 export function InventarioScreen({ inventario, movimientos }: InventarioScreenProps) {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(readInitialSearchTerm);
   const [selectedMovementId, setSelectedMovementId] = useState<string | null>(movimientos[0]?.id ?? null);
 
   const filteredInventory = useMemo(() => {

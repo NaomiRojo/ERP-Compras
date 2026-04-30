@@ -253,8 +253,9 @@ describe("ProveedoresScreen", () => {
       />,
     );
 
-    expect(view.queryByRole("button", { name: "Nuevo proveedor" })).toBeNull();
-    expect(view.getByText("Solo lectura")).toBeTruthy();
+    expect((view.getByRole("button", { name: "Nuevo proveedor" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((view.getByRole("button", { name: "Editar" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((view.getByRole("button", { name: "Eliminar" }) as HTMLButtonElement).disabled).toBe(true);
 
     await user.type(view.getByLabelText("Buscar"), "desconocido");
 

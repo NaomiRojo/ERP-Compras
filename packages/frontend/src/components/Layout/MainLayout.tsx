@@ -3,15 +3,17 @@ import { Box } from "@mui/material";
 
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
-import type { NavItem } from "../../types";
+import type { NavItem, ViewKey } from "../../types";
+import type { UsuarioApi } from "../../types/api";
 
 type MainLayoutProps = {
   navItems: NavItem[];
   title: string;
   subtitle: string;
   statusChip: string;
-  currentUserName: string;
+  currentUser: UsuarioApi | null;
   currentUserRoleLabel: string;
+  currentView: ViewKey;
   onLogout: () => void;
   children: ReactNode;
 };
@@ -21,21 +23,30 @@ export function MainLayout({
   title,
   subtitle,
   statusChip,
-  currentUserName,
+  currentUser,
   currentUserRoleLabel,
+  currentView,
   onLogout,
   children,
 }: MainLayoutProps) {
   return (
     <Box className="shell">
       <Sidebar
-        currentUserName={currentUserName}
+        currentUserName={currentUser?.nombreCompleto ?? "Usuario"}
         currentUserRoleLabel={currentUserRoleLabel}
         navItems={navItems}
         onLogout={onLogout}
       />
       <Box className="content" component="main">
-        <Header statusChip={statusChip} subtitle={subtitle} title={title} />
+        <Header
+          currentUser={currentUser}
+          currentUserRoleLabel={currentUserRoleLabel}
+          currentView={currentView}
+          onLogout={onLogout}
+          statusChip={statusChip}
+          subtitle={subtitle}
+          title={title}
+        />
         <div className="content__body">{children}</div>
       </Box>
     </Box>

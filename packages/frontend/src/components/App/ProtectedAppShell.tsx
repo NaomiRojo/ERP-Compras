@@ -15,11 +15,12 @@ import {
   UsuariosScreen,
 } from "../../screens";
 import type { ViewKey } from "../../types";
+import type { UsuarioApi } from "../../types/api";
 import { ErrorPanel, LoadingPanel } from "../Common/StatePanels";
 import { MainLayout } from "../Layout/MainLayout";
 
 type ProtectedAppShellProps = {
-  currentUserName: string;
+  currentUser: UsuarioApi | null;
   currentView: ViewKey | null;
   defaultProtectedPath: string;
   isCurrentViewAllowed: boolean;
@@ -28,7 +29,7 @@ type ProtectedAppShellProps = {
 };
 
 export function ProtectedAppShell({
-  currentUserName,
+  currentUser,
   currentView,
   defaultProtectedPath,
   isCurrentViewAllowed,
@@ -52,6 +53,7 @@ export function ProtectedAppShell({
       case "dashboard":
         return (
           <DashboardScreen
+            auditoria={workspace.appData.auditoria}
             cuentas={workspace.appData.cxp}
             inventario={workspace.appData.inventario}
             metrics={workspace.dashboardMetrics}
@@ -137,8 +139,9 @@ export function ProtectedAppShell({
 
   return (
     <MainLayout
-      currentUserName={currentUserName}
+      currentUser={currentUser}
       currentUserRoleLabel={workspace.currentRoleLabel}
+      currentView={currentView}
       navItems={workspace.availableNavItems}
       onLogout={onLogout}
       statusChip={workspace.statusChip}

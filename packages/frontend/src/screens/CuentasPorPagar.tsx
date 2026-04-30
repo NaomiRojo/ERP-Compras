@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 
 import { Badge } from "../components/Common/Badge";
 import { DataTable } from "../components/Common/DataTable";
+import { PermissionGate } from "../components/Common/PermissionGate";
+import { SearchBar } from "../components/Common/SearchBar";
 import { resolveTone } from "../mocks/data";
 import type { AccountsPayable } from "../types";
 import type { CrearCuentaPorPagarDto } from "../types/api";
@@ -71,6 +73,16 @@ const validateCxpForm = (form: CxpFormState, ordenesFactura: OrdenFacturaOption[
   return errors;
 };
 
+const readInitialSearchTerm = (): string => {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  const hashQuery = window.location.hash.split("?")[1] ?? "";
+  const params = new URLSearchParams(hashQuery || window.location.search);
+  return params.get("q") ?? "";
+};
+
 export function CuentasPorPagarScreen({
   cuentas,
   canRegister,
@@ -78,6 +90,7 @@ export function CuentasPorPagarScreen({
   onRegister,
 }: CuentasPorPagarScreenProps) {
   const [isFormVisible, setIsFormVisible] = useState(false);
+  const [searchTerm, setSearchTerm] = useState(readInitialSearchTerm);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [validationActive, setValidationActive] = useState(false);
@@ -88,6 +101,26 @@ export function CuentasPorPagarScreen({
     () => ordenesFactura.find((orden) => orden.id === form.compraId)?.proveedorId ?? "",
     [form.compraId, ordenesFactura],
   );
+  const filteredCuentas = useMemo(() => {
+    const normalizedQuery = searchTerm.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return cuentas;
+    }
+
+    return cuentas.filter((cuenta) =>
+      [
+        cuenta.proveedor,
+        cuenta.factura,
+        cuenta.estado,
+        cuenta.vencimiento,
+        String(cuenta.total),
+        String(cuenta.saldo),
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedQuery),
+    );
+  }, [cuentas, searchTerm]);
 
   const resetForm = () => {
     setForm(buildEmptyForm(ordenesFactura));
@@ -151,21 +184,30 @@ export function CuentasPorPagarScreen({
         description="Facturas pendientes y saldos."
         headers={["Proveedor", "Factura", "Total", "Saldo", "Vencimiento", "Estado"]}
         actions={
-          canRegister ? (
-            <button
-              className="primary-button"
-              onClick={() => {
-                setErrorMessage(null);
-                setValidationActive(false);
-                setIsFormVisible((value) => !value);
-              }}
-              type="button"
-            >
-              {isFormVisible ? "Cerrar" : "Registrar factura"}
-            </button>
-          ) : null
+          <div className="action-row">
+            <SearchBar
+              onChange={setSearchTerm}
+              placeholder="Proveedor, factura, estado..."
+              value={searchTerm}
+            />
+            <PermissionGate disabled={!canRegister} reason="Tu rol no tiene permiso para registrar facturas.">
+              <button
+                className="primary-button"
+                disabled={!canRegister}
+                onClick={() => {
+                  setErrorMessage(null);
+                  setValidationActive(false);
+                  setIsFormVisible((value) => !value);
+                }}
+                type="button"
+              >
+                {isFormVisible ? "Cerrar" : "Registrar factura"}
+              </button>
+            </PermissionGate>
+          </div>
         }
-        rows={cuentas.map((item) => [
+        emptyMessage="No hay cuentas por pagar que coincidan con la busqueda."
+        rows={filteredCuentas.map((item) => [
           item.proveedor,
           item.factura,
           `${item.total.toLocaleString()}`,
