@@ -1,0 +1,14 @@
+export const ESTADO_DOCUMENTO_IDS = {
+  BORRADOR: 1,
+  ABIERTO: 2,
+  CERRADO: 3,
+  ANULADO: 4,
+  APROBADO: 5,
+} as const;
+
+export const TIPO_DOCUMENTO_IDS = {
+  SOLICITUD_COMPRA: 1,
+  PEDIDO_COMPRA: 2,
+  ENTRADA_MERCADERIA: 3,
+  FACTURA_PROVEEDOR: 4,
+} as const;

@@ -1,0 +1,58 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: erp_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: erp
+      POSTGRES_USER: erp_user
+      POSTGRES_PASSWORD: erp_password
+    ports:
+      - "${POSTGRES_PUBLISHED_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp_user -d erp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./packages/backend
+    container_name: erp_backend
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://erp_user:erp_password@db:5432/erp}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      EXPOSE_2FA_CODE: ${EXPOSE_2FA_CODE:-false}
+      TWO_FACTOR_DEFAULT_CHANNEL: ${TWO_FACTOR_DEFAULT_CHANNEL:-EMAIL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      TWO_FACTOR_PHONE_OVERRIDE: ${TWO_FACTOR_PHONE_OVERRIDE:-}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_FROM_PHONE: ${TWILIO_FROM_PHONE:-}
+      TWILIO_WHATSAPP_CONTENT_SID: ${TWILIO_WHATSAPP_CONTENT_SID:-}
+    volumes:
+      - ./packages/backend:/app
+      - /app/node_modules
+    command: sh -lc "bun install && bun run db:migrate && bun run dev"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./packages/frontend
+    container_name: erp_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./packages/frontend:/app
+      - /app/node_modules
+    command: sh -lc "bun install && bun run dev"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
