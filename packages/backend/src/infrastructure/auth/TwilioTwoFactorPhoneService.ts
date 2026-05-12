@@ -73,8 +73,7 @@ export class TwilioTwoFactorPhoneService implements ITwoFactorPhoneService {
         From: this.fromAddress,
         ContentSid: this.whatsappContentSid!,
         ContentVariables: JSON.stringify({
-          1: "ERP",
-          2: code,
+          1: code,
         }),
       });
 

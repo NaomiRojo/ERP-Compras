@@ -12,7 +12,7 @@ Backend y frontend de un ERP académico con enfoque en compras, proveedores, inv
 
 ## Estado actual
 
-El proyecto ya cuenta con una base funcional de backend y entorno Docker. El frontend todavía está en fase inicial.
+El proyecto cuenta con backend y frontend funcionales para presentar el módulo ERP de compras. La SPA consume APIs REST reales, protege rutas por sesión/rol, maneja token JWT con interceptor HTTP y cubre login, dashboard, CRUD, reportes y pruebas unitarias.
 
 ### Implementado
 
@@ -30,18 +30,19 @@ El proyecto ya cuenta con una base funcional de backend y entorno Docker. El fro
 - CRUD de proveedores
 - CRUD de artículos
 - CRUD de órdenes de compra
+- frontend SPA en React con login, 2FA, dashboard y layout ERP responsivo
+- persistencia de sesión en `localStorage`/`sessionStorage` con expiración por inactividad
+- interceptor HTTP para inyectar `Authorization: Bearer <token>`
+- CRUD frontend de proveedores, artículos y órdenes de compra con validaciones de formulario
+- reportes operativos con filtros, gráficos SVG, alertas, exportación CSV e impresión/PDF
+- pruebas unitarias frontend con Bun Testing Library y reporte de cobertura
 - listado de usuarios
 - pruebas unitarias iniciales del backend
 
 ### Pendiente
 
-- frontend funcional en React
-- persistencia de sesión en frontend
-- flujos ERP completos:
-  - aprobar orden de compra
-  - registrar recepción
-  - registrar factura
-  - registrar pago
+- prototipo visual final en Figma para anexar al examen
+- endurecer escenarios productivos de despliegue y monitoreo
 - permisos granulares para futuros flujos de aprobación, recepción y pago
 - más pruebas de integración
 

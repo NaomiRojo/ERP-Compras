@@ -10,7 +10,6 @@ type MainLayoutProps = {
   navItems: NavItem[];
   title: string;
   subtitle: string;
-  statusChip: string;
   currentUser: UsuarioApi | null;
   currentUserRoleLabel: string;
   currentView: ViewKey;
@@ -22,7 +21,6 @@ export function MainLayout({
   navItems,
   title,
   subtitle,
-  statusChip,
   currentUser,
   currentUserRoleLabel,
   currentView,
@@ -43,7 +41,6 @@ export function MainLayout({
           currentUserRoleLabel={currentUserRoleLabel}
           currentView={currentView}
           onLogout={onLogout}
-          statusChip={statusChip}
           subtitle={subtitle}
           title={title}
         />

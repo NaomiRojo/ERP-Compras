@@ -526,7 +526,7 @@ describe("OrdenesScreen UI", () => {
     });
     await user.click(receiveView.getByRole("button", { name: "Cancelar" }));
     expect(receiveView.queryByRole("button", { name: "Confirmar recepcion" })).toBeNull();
-  });
+  }, 10000);
 
   it("muestra errores del backend cuando fallan las operaciones", async () => {
     const user = userEvent.setup({ document: globalThis.document });

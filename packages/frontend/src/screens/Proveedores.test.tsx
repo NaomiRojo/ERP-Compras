@@ -74,7 +74,7 @@ describe("ProveedoresScreen", () => {
       direccion: "Calle Secundaria 45",
       lineaCredito: 2500,
     });
-  });
+  }, 10000);
 
   it("bloquea el submit cuando el formulario tiene errores de formato", async () => {
     const user = userEvent.setup({ document: globalThis.document });

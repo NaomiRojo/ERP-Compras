@@ -44,6 +44,7 @@ En `TwilioTwoFactorPhoneService.ts` se hicieron estos ajustes:
   - usar WhatsApp sin prefijo `whatsapp:` en el remitente
   - usar numeros mal formados
 - Se dejo soporte opcional para `TWILIO_WHATSAPP_CONTENT_SID` cuando el mensaje necesita iniciar conversacion con una plantilla aprobada.
+- Cuando se usa plantilla, el backend envia `ContentVariables={"1":"<codigo>"}`. La plantilla de Twilio debe poner el codigo en `{{1}}`, por ejemplo: `Tu codigo de verificacion ERP es {{1}}`.
 - Se mejoro el manejo de errores de Twilio:
   - captura de errores de red
   - parseo de errores JSON de Twilio

@@ -144,7 +144,6 @@ export function ProtectedAppShell({
       currentView={currentView}
       navItems={workspace.availableNavItems}
       onLogout={onLogout}
-      statusChip={workspace.statusChip}
       subtitle={currentSubtitle}
       title={VIEW_LABELS[currentView]}
     >

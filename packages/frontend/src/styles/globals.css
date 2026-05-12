@@ -17,6 +17,7 @@ html,
 body,
 #root {
   margin: 0;
+  height: 100%;
   min-height: 100%;
 }
 
@@ -49,6 +50,11 @@ button {
 button:disabled {
   cursor: not-allowed;
   opacity: 0.7;
+}
+
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
 }
 
 .auth-screen {
@@ -160,17 +166,13 @@ button:disabled {
     "Courier New", monospace;
 }
 
-.auth-form label {
+.auth-form > label:not(.MuiFormControlLabel-root) {
   display: grid;
   gap: 8px;
   font-size: 14px;
   color: #33415c;
 }
 
-.auth-form input,
-.auth-form select,
-.code-grid input,
-.search-bar input,
 .inline-form input,
 .inline-form select,
 .textarea-field,
@@ -182,10 +184,6 @@ button:disabled {
   padding: 14px 16px;
 }
 
-[data-theme="dark"] .auth-form input,
-[data-theme="dark"] .auth-form select,
-[data-theme="dark"] .code-grid input,
-[data-theme="dark"] .search-bar input,
 [data-theme="dark"] .inline-form input,
 [data-theme="dark"] .inline-form select,
 [data-theme="dark"] .textarea-field,
@@ -349,22 +347,37 @@ button:disabled {
 }
 
 .shell {
+  height: 100vh;
   min-height: 100vh;
   display: grid;
   grid-template-columns: 304px 1fr;
+  overflow: hidden;
 }
 
 .sidebar {
-  background:
-    linear-gradient(180deg, rgba(12, 25, 48, 0.98), rgba(15, 35, 72, 0.96)),
-    radial-gradient(circle at top left, rgba(33, 86, 217, 0.42), transparent 38%),
-    radial-gradient(circle at bottom right, rgba(15, 118, 110, 0.2), transparent 36%);
-  color: #e7eefc;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: #142033 !important;
   padding: 24px;
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: 24px;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid rgba(20, 32, 51, 0.08);
+  box-shadow: 12px 0 38px rgba(37, 59, 103, 0.08);
+}
+
+[data-theme="dark"] .sidebar {
+  background:
+    linear-gradient(180deg, rgba(12, 25, 48, 0.98), rgba(15, 35, 72, 0.96)),
+    radial-gradient(circle at top left, rgba(33, 86, 217, 0.42), transparent 38%),
+    radial-gradient(circle at bottom right, rgba(15, 118, 110, 0.2), transparent 36%) !important;
+  color: #e7eefc !important;
+  border-right-color: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
 }
 
 .sidebar__brand,
@@ -376,7 +389,11 @@ button:disabled {
 
 .sidebar__brand {
   padding-bottom: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(20, 32, 51, 0.08);
+}
+
+[data-theme="dark"] .sidebar__brand {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 
 .sidebar__brand strong,
@@ -389,6 +406,9 @@ button:disabled {
   display: grid;
   gap: 8px;
   align-content: start;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .nav-link {
@@ -400,8 +420,8 @@ button:disabled {
   text-decoration: none;
   padding: 12px;
   border-radius: 12px;
-  color: #b8c7e2;
-  background: rgba(255, 255, 255, 0.025);
+  color: #60708c;
+  background: transparent;
   border: 1px solid transparent;
   transition:
     background 160ms ease,
@@ -411,9 +431,9 @@ button:disabled {
 }
 
 .nav-link:hover {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(255, 255, 255, 0.08);
-  color: #fff;
+  background: linear-gradient(135deg, rgba(33, 86, 217, 0.1), rgba(15, 118, 110, 0.08));
+  border-color: rgba(33, 86, 217, 0.16);
+  color: #142033;
   transform: translateX(2px);
 }
 
@@ -424,8 +444,8 @@ button:disabled {
   place-items: center;
   flex: 0 0 auto;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.08);
-  color: currentColor;
+  background: #dde8ff;
+  color: #2156d9;
 }
 
 .nav-link__copy {
@@ -434,15 +454,47 @@ button:disabled {
 
 .nav-link__copy > span {
   display: block;
-  color: #89a0c9;
+  color: #7890bd;
   font-size: 12px;
   margin-top: 2px;
+}
+
+[data-theme="dark"] .nav-link {
+  color: #b8c7e2;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+[data-theme="dark"] .nav-link:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+[data-theme="dark"] .nav-link__icon {
+  background: rgba(255, 255, 255, 0.08);
+  color: currentColor;
+}
+
+[data-theme="dark"] .nav-link__copy > span {
+  color: #89a0c9;
 }
 
 .nav-link--active {
   background: linear-gradient(135deg, rgba(33, 86, 217, 0.96), rgba(15, 118, 110, 0.86));
   color: white;
   box-shadow: 0 16px 34px rgba(3, 12, 28, 0.28);
+}
+
+.nav-link--active:hover {
+  background: linear-gradient(135deg, #1f53d8, #0f766e);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+[data-theme="dark"] .nav-link--active:hover {
+  background: linear-gradient(135deg, #1f53d8, #0f766e);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #fff;
 }
 
 .nav-link--active .nav-link__copy > span {
@@ -457,7 +509,11 @@ button:disabled {
 .sidebar__footer {
   display: grid;
   padding-top: 18px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(20, 32, 51, 0.08);
+}
+
+[data-theme="dark"] .sidebar__footer {
+  border-top-color: rgba(255, 255, 255, 0.08);
 }
 
 .sidebar__user {
@@ -475,6 +531,9 @@ button:disabled {
 .content {
   padding: 24px 28px 32px;
   min-width: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .content__header {
@@ -500,6 +559,35 @@ button:disabled {
 .content__body {
   display: grid;
   gap: 24px;
+}
+
+.crud-editor-drawer__paper {
+  width: min(640px, 100vw);
+  max-width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 24px;
+  background: #f4f7fb !important;
+  color: #142033;
+}
+
+[data-theme="dark"] .crud-editor-drawer__paper {
+  background: #09111f !important;
+  color: #e7eefc;
+}
+
+.crud-editor-drawer__close {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.crud-editor-drawer__paper .panel {
+  box-shadow: 0 18px 40px rgba(37, 59, 103, 0.08);
+}
+
+.crud-editor-drawer__paper .inline-form {
+  grid-template-columns: 1fr;
 }
 
 .header-actions {
@@ -876,7 +964,9 @@ pre {
   .shell,
   .content {
     display: block !important;
+    height: auto !important;
     min-height: auto !important;
+    overflow: visible !important;
   }
 
   .panel,
@@ -897,15 +987,27 @@ pre {
 
 @media (max-width: 900px) {
   .shell {
+    height: auto;
     grid-template-columns: 1fr;
+    overflow: visible;
   }
 
   .sidebar {
+    position: static;
+    height: auto;
+    overflow: visible;
     grid-template-rows: auto;
   }
 
   .sidebar__nav {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .content {
+    height: auto;
+    overflow: visible;
   }
 
   .content__header {

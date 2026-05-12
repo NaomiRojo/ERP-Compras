@@ -75,7 +75,6 @@ export type UseERPWorkspaceResult = {
   onUpdateProveedor: (proveedorId: string, payload: CrearProveedorDto) => Promise<void>;
   ordenesFacturaOptions: FacturaOrdenOption[];
   reloadData: () => void;
-  statusChip: string;
 };
 
 const ROLE_LABEL_BY_CODE: Record<UserRole, string> = {
@@ -358,18 +357,6 @@ export function useERPWorkspace({
     );
   }, [catalogRoles, currentRoleCode]);
 
-  const statusChip = useMemo(() => {
-    if (dataLoading) {
-      return "Sincronizando datos...";
-    }
-
-    if (dataErrorMessage) {
-      return "Error al sincronizar";
-    }
-
-    return "Conectado a backend";
-  }, [dataErrorMessage, dataLoading]);
-
   return {
     appData,
     availableNavItems,
@@ -403,6 +390,5 @@ export function useERPWorkspace({
     onUpdateProveedor,
     ordenesFacturaOptions,
     reloadData,
-    statusChip,
   };
 }

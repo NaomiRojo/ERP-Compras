@@ -4,7 +4,6 @@ import {
   Box,
   Breadcrumbs,
   ButtonBase,
-  Chip,
   Link,
   Divider,
   ListItemIcon,
@@ -22,7 +21,6 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import SecurityIcon from "@mui/icons-material/Security";
 
 import { useColorMode } from "../Common/ColorMode";
-import { SearchBar } from "../Common/SearchBar";
 import { buildViewPath } from "../../router/views";
 import type { ViewKey } from "../../types";
 import type { UsuarioApi } from "../../types/api";
@@ -34,7 +32,6 @@ type HeaderProps = {
   onLogout: () => void;
   title: string;
   subtitle: string;
-  statusChip: string;
 };
 
 const initialsFromName = (name: string): string => {
@@ -53,7 +50,6 @@ export function Header({
   onLogout,
   title,
   subtitle,
-  statusChip,
 }: HeaderProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const { mode, toggleMode } = useColorMode();
@@ -91,7 +87,6 @@ export function Header({
         </Typography>
       </div>
       <Stack className="header-actions" direction={{ xs: "column", sm: "row" }} spacing={1.5}>
-        <SearchBar />
         <ButtonBase
           aria-label={mode === "dark" ? "Activar tema claro" : "Activar tema oscuro"}
           className="theme-toggle"
@@ -184,7 +179,6 @@ export function Header({
             Cerrar sesion
           </MenuItem>
         </Menu>
-        <Chip className="search-chip" color={statusChip.includes("Error") ? "error" : "success"} label={statusChip} variant="outlined" />
       </Stack>
     </header>
   );

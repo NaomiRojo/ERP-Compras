@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import CloseIcon from "@mui/icons-material/Close";
+import { Box, Drawer, IconButton } from "@mui/material";
 
 import { Badge } from "../components/Common/Badge";
 import { CrudToolbar } from "../components/Common/CrudToolbar";
@@ -270,6 +272,7 @@ export function ProveedoresScreen({
 
   const showFieldError = (field: ProviderField): string | undefined =>
     validationActive ? fieldErrors[field] : undefined;
+  const editorOpen = canManage && editorMode !== null;
 
   return (
     <div className="stack">
@@ -306,8 +309,8 @@ export function ProveedoresScreen({
           <Badge key={`${provider.id}-status`} tone={provider.activo ? "success" : "neutral"}>
             {provider.activo ? "Activo" : "Inactivo"}
           </Badge>,
-            <div className="action-row" key={`${provider.id}-actions`}>
-              <PermissionGate disabled={!canManage} reason="Tu rol no tiene permiso para editar proveedores.">
+          <div className="action-row" key={`${provider.id}-actions`}>
+            <PermissionGate disabled={!canManage} reason="Tu rol no tiene permiso para editar proveedores.">
               <button
                 className="link-button"
                 disabled={isSubmitting || !canManage}
@@ -316,8 +319,8 @@ export function ProveedoresScreen({
               >
                 Editar
               </button>
-              </PermissionGate>
-              <PermissionGate disabled={!canManage} reason="Tu rol no tiene permiso para eliminar proveedores.">
+            </PermissionGate>
+            <PermissionGate disabled={!canManage} reason="Tu rol no tiene permiso para eliminar proveedores.">
               <button
                 className="link-button link-button--danger"
                 disabled={isSubmitting || !canManage}
@@ -328,28 +331,45 @@ export function ProveedoresScreen({
               >
                 Eliminar
               </button>
-              </PermissionGate>
-            </div>
+            </PermissionGate>
+          </div>,
         ])}
       />
 
-      {canManage && editorMode ? (
-        <ProviderEditor
-          errorMessage={errorMessage}
-          form={form}
-          isSubmitting={isSubmitting}
-          mode={editorMode}
-          monedaOptions={monedaOptions}
-          onCancel={resetForm}
-          onFieldChange={updateFormField}
-          onSubmit={submit}
-          showFieldError={showFieldError}
-        />
-      ) : errorMessage ? (
+      {errorMessage && !editorOpen ? (
         <section className="panel">
           <p className="auth-feedback auth-feedback--error">{errorMessage}</p>
         </section>
       ) : null}
+
+      <Drawer
+        anchor="right"
+        className="crud-editor-drawer"
+        onClose={resetForm}
+        open={editorOpen}
+        slotProps={{ paper: { className: "crud-editor-drawer__paper" } }}
+        transitionDuration={0}
+        variant="persistent"
+      >
+        <Box className="crud-editor-drawer__close">
+          <IconButton aria-label="Cerrar formulario de proveedor" onClick={resetForm} size="small">
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+        {editorMode ? (
+          <ProviderEditor
+            errorMessage={errorMessage}
+            form={form}
+            isSubmitting={isSubmitting}
+            mode={editorMode}
+            monedaOptions={monedaOptions}
+            onCancel={resetForm}
+            onFieldChange={updateFormField}
+            onSubmit={submit}
+            showFieldError={showFieldError}
+          />
+        ) : null}
+      </Drawer>
     </div>
   );
 }

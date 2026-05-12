@@ -8,13 +8,21 @@ import {
   Checkbox,
   FormControl,
   FormControlLabel,
+  IconButton,
+  InputAdornment,
   InputLabel,
-  Link,
-  NativeSelect,
+  MenuItem,
+  Paper,
+  Select,
   Stack,
+  Tab,
+  Tabs,
   TextField,
   Typography,
 } from "@mui/material";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 
 import type { SessionPersistence } from "../../utils/session";
 
@@ -41,10 +49,15 @@ type LoginCardProps = {
   onSubmitRegister: (payload: RegisterPayload) => Promise<void>;
 };
 
+const DEFAULT_SESSION_PERSISTENCE: SessionPersistence = "session";
+const DEFAULT_TWO_FACTOR_CHANNEL: NonNullable<LoginPayload["twoFactorChannel"]> = "WHATSAPP";
+
 const buildGeneratedUsername = (email: string, nombreCompleto: string): string => {
   const emailBase = email.split("@")[0]?.trim().toLowerCase() ?? "";
   const nameBase = nombreCompleto.trim().toLowerCase().replace(/\s+/g, ".");
   const normalizedBase = (emailBase || nameBase || "usuario")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9._-]/g, "")
     .slice(0, 40);
   const suffix = Math.random().toString(36).slice(2, 6);
@@ -52,7 +65,35 @@ const buildGeneratedUsername = (email: string, nombreCompleto: string): string =
   return `${normalizedBase || "usuario"}_${suffix}`;
 };
 
-const DEFAULT_SESSION_PERSISTENCE: SessionPersistence = "session";
+const phoneCountries = [
+  { code: "BO", label: "Bolivia", dialCode: "+591" },
+  { code: "AR", label: "Argentina", dialCode: "+54" },
+  { code: "BR", label: "Brasil", dialCode: "+55" },
+  { code: "CL", label: "Chile", dialCode: "+56" },
+  { code: "PE", label: "Perú", dialCode: "+51" },
+  { code: "US", label: "Estados Unidos", dialCode: "+1" },
+] as const;
+
+const CountryCodeBadge = ({ code }: { code: string }) => (
+  <Box
+    component="span"
+    sx={{
+      alignItems: "center",
+      bgcolor: "rgba(37, 99, 235, 0.1)",
+      border: "1px solid rgba(37, 99, 235, 0.18)",
+      borderRadius: 1.5,
+      color: "primary.main",
+      display: "inline-flex",
+      fontSize: 12,
+      fontWeight: 900,
+      height: 26,
+      justifyContent: "center",
+      minWidth: 36,
+    }}
+  >
+    {code}
+  </Box>
+);
 
 export function LoginCard({
   isSubmitting,
@@ -62,19 +103,22 @@ export function LoginCard({
 }: LoginCardProps) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
   const [nombreCompleto, setNombreCompleto] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberSession, setRememberSession] = useState(false);
-  const [twoFactorChannel, setTwoFactorChannel] = useState<
-    "" | "EMAIL" | "SMS" | "WHATSAPP" | "VOICE"
-  >("");
-  const [twoFactorPhoneNumber, setTwoFactorPhoneNumber] = useState("");
+  const [phoneCountryCode, setPhoneCountryCode] = useState<(typeof phoneCountries)[number]["code"]>("BO");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
 
-  const expectsPhoneNumber =
-    twoFactorChannel === "SMS" || twoFactorChannel === "WHATSAPP" || twoFactorChannel === "VOICE";
+  const selectedCountry =
+    phoneCountries.find((country) => country.code === phoneCountryCode) ?? phoneCountries[0];
+
+  const normalizedPhoneNumber = phoneNumber.replace(/\D/g, "");
+  const twoFactorPhoneNumber = normalizedPhoneNumber
+    ? `${selectedCountry.dialCode}${normalizedPhoneNumber}`
+    : undefined;
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -85,8 +129,8 @@ export function LoginCard({
         email,
         password,
         persistence: rememberSession ? "local" : DEFAULT_SESSION_PERSISTENCE,
-        twoFactorChannel: twoFactorChannel || undefined,
-        twoFactorPhoneNumber: expectsPhoneNumber ? twoFactorPhoneNumber.trim() || undefined : undefined,
+        twoFactorChannel: DEFAULT_TWO_FACTOR_CHANNEL,
+        twoFactorPhoneNumber,
       });
       return;
     }
@@ -100,55 +144,91 @@ export function LoginCard({
         twoFactorEnabled,
       });
 
-      setSuccessMessage("Usuario registrado. Ahora inicia sesion.");
+      setSuccessMessage("Cuenta registrada. Ahora inicia sesión.");
       setMode("login");
       setNombreCompleto("");
+      setTwoFactorEnabled(true);
     } catch {
       setSuccessMessage(null);
     }
   };
 
+  const switchMode = (nextMode: "login" | "register") => {
+    setMode(nextMode);
+    setSuccessMessage(null);
+  };
+
   return (
     <Card className="auth-card" component="section">
-      <CardContent>
+      <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
         <Stack className="auth-header" direction="row" spacing={2}>
           <Box className="brand-mark">EC</Box>
           <Box>
             <Typography component="h1" variant="h5">
               ERP Compras
             </Typography>
-            <Typography color="text.secondary">Gestion profesional de abastecimiento</Typography>
+            <Typography color="text.secondary">Gestión profesional de abastecimiento</Typography>
           </Box>
         </Stack>
+
+        <Paper
+          sx={{
+            bgcolor: "rgba(33, 86, 217, 0.04)",
+            borderColor: "rgba(33, 86, 217, 0.12)",
+            mb: 2.25,
+            p: 0.5,
+          }}
+          variant="outlined"
+        >
+          <Tabs
+            aria-label="Modo de autenticación"
+            onChange={(_event, value) => switchMode(value as "login" | "register")}
+            sx={{
+              minHeight: 38,
+              ".MuiTabs-flexContainer": {
+                gap: 0.5,
+              },
+              ".MuiTabs-indicator": {
+                display: "none",
+              },
+              ".MuiTab-root": {
+                borderRadius: 1.5,
+                color: "text.secondary",
+                fontWeight: 800,
+                letterSpacing: 0,
+                minHeight: 36,
+                py: 0.75,
+              },
+              ".MuiTab-root.Mui-selected": {
+                bgcolor: "background.paper",
+                boxShadow: "0 8px 18px rgba(33, 86, 217, 0.12)",
+                color: "primary.main",
+              },
+            }}
+            value={mode}
+            variant="fullWidth"
+          >
+            <Tab label="Acceso" value="login" />
+            <Tab label="Registro" value="register" />
+          </Tabs>
+        </Paper>
 
         <Stack className="auth-form" component="form" onSubmit={submit}>
           {mode === "register" ? (
             <>
               <TextField
+                autoComplete="name"
                 disabled={isSubmitting}
                 label="Nombre completo"
+                helperText="El usuario se generará automáticamente a partir del correo."
                 onChange={(event) => setNombreCompleto(event.target.value)}
-                required
                 slotProps={{
                   htmlInput: {
                     "aria-label": "Nombre completo",
+                    required: true,
                   },
                 }}
                 value={nombreCompleto}
-              />
-              <Typography className="auth-feedback auth-feedback--hint" color="text.secondary">
-                El usuario se genera automaticamente a partir de tus datos.
-              </Typography>
-              <FormControlLabel
-                className="auth-checkbox"
-                control={
-                  <Checkbox
-                    checked={twoFactorEnabled}
-                    disabled={isSubmitting}
-                    onChange={(event) => setTwoFactorEnabled(event.target.checked)}
-                  />
-                }
-                label="Activar segundo factor al crear la cuenta"
               />
             </>
           ) : null}
@@ -156,12 +236,12 @@ export function LoginCard({
           <TextField
             autoComplete="username"
             disabled={isSubmitting}
-            label="Correo electronico"
+            label="Correo electrónico"
             onChange={(event) => setEmail(event.target.value)}
-            required
             slotProps={{
               htmlInput: {
-                "aria-label": "Correo electronico",
+                "aria-label": "Correo electrónico",
+                required: true,
               },
             }}
             type="email"
@@ -171,19 +251,79 @@ export function LoginCard({
           <TextField
             autoComplete={mode === "login" ? "current-password" : "new-password"}
             disabled={isSubmitting}
-            label="Contrasena"
+            label="Contraseña"
             onChange={(event) => setPassword(event.target.value)}
-            required
             slotProps={{
               htmlInput: {
-                "aria-label": "Contrasena",
+                "aria-label": "Contraseña",
+                required: true,
+              },
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                      disabled={isSubmitting}
+                      edge="end"
+                      onClick={() => setShowPassword((current) => !current)}
+                      onMouseDown={(event) => event.preventDefault()}
+                    >
+                      {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
               },
             }}
-            type="password"
+            type={showPassword ? "text" : "password"}
             value={password}
           />
 
-          {mode === "login" ? (
+          {mode === "register" ? (
+            <Paper
+              sx={{
+                bgcolor: "rgba(33, 86, 217, 0.04)",
+                borderColor: "rgba(33, 86, 217, 0.12)",
+                p: 1.25,
+              }}
+              variant="outlined"
+            >
+              <FormControlLabel
+                className="auth-checkbox"
+                control={
+                  <Checkbox
+                    checked={twoFactorEnabled}
+                    disabled={isSubmitting}
+                    onChange={(event) => setTwoFactorEnabled(event.target.checked)}
+                    slotProps={{
+                      input: {
+                        "aria-label": "Activar verificación de dos pasos al crear la cuenta",
+                      },
+                    }}
+                    sx={{ mt: -0.25 }}
+                  />
+                }
+                label={
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 800 }} variant="body2">
+                      Activar verificación de dos pasos
+                    </Typography>
+                    <Typography color="text.secondary" variant="body2">
+                      al crear la cuenta
+                    </Typography>
+                  </Box>
+                }
+                sx={{
+                  alignItems: "flex-start",
+                  m: 0,
+                  width: "100%",
+                  ".MuiFormControlLabel-label": {
+                    flex: 1,
+                    minWidth: 0,
+                  },
+                }}
+              />
+            </Paper>
+          ) : (
             <>
               <FormControlLabel
                 className="auth-checkbox"
@@ -195,57 +335,134 @@ export function LoginCard({
                   />
                 }
                 label="Recordarme en este equipo"
+                sx={{ alignItems: "center", m: 0 }}
               />
-              <Typography className="auth-feedback auth-feedback--hint" color="text.secondary">
-                Si no activas esta opcion, la sesion se cerrara al cerrar la pestana o por inactividad.
-              </Typography>
 
-              <FormControl fullWidth variant="outlined">
-                <InputLabel htmlFor="two-factor-channel">Canal 2FA</InputLabel>
-                <NativeSelect
-                  disabled={isSubmitting}
-                  inputProps={{
-                    "aria-label": "Canal 2FA",
-                    id: "two-factor-channel",
-                  }}
-                  onChange={(event) =>
-                    setTwoFactorChannel(
-                      event.target.value as "" | "EMAIL" | "SMS" | "WHATSAPP" | "VOICE",
-                    )
-                  }
-                  value={twoFactorChannel}
-                >
-                  <option value="">Usar configuracion del servidor</option>
-                  <option value="EMAIL">Correo</option>
-                  <option value="SMS">SMS</option>
-                  <option value="WHATSAPP">WhatsApp</option>
-                  <option value="VOICE">Llamada</option>
-                </NativeSelect>
-              </FormControl>
+              <Paper
+                sx={{
+                  bgcolor: "rgba(18, 140, 126, 0.06)",
+                  borderColor: "rgba(18, 140, 126, 0.22)",
+                  p: 1.75,
+                }}
+                variant="outlined"
+              >
+                <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+                  <Box
+                    sx={{
+                      alignItems: "center",
+                      bgcolor: "#128c7e",
+                      borderRadius: 2,
+                      color: "#fff",
+                      display: "grid",
+                      flex: "0 0 auto",
+                      height: 42,
+                      justifyContent: "center",
+                      width: 42,
+                    }}
+                  >
+                    <WhatsAppIcon fontSize="small" />
+                  </Box>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 800 }} variant="body1">
+                      Verificación de dos pasos
+                    </Typography>
+                    <Typography color="text.secondary" variant="body2">
+                      El código de acceso se enviará por WhatsApp.
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Paper>
 
-              {expectsPhoneNumber ? (
-                <>
-                  <TextField
+              <Box
+                sx={{
+                  display: "grid",
+                  gap: 1.5,
+                  gridTemplateColumns: { sm: "minmax(170px, 0.48fr) minmax(0, 1fr)", xs: "1fr" },
+                }}
+              >
+                <FormControl fullWidth>
+                  <InputLabel id="phone-country-label">País</InputLabel>
+                  <Select
                     disabled={isSubmitting}
-                    label="Numero para 2FA"
-                    onChange={(event) => setTwoFactorPhoneNumber(event.target.value)}
-                    placeholder="+59171234567"
+                    label="País"
+                    labelId="phone-country-label"
+                    onChange={(event) =>
+                      setPhoneCountryCode(event.target.value as (typeof phoneCountries)[number]["code"])
+                    }
+                    renderValue={(value) => {
+                      const country =
+                        phoneCountries.find((item) => item.code === value) ?? selectedCountry;
+
+                      return (
+                        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                          <CountryCodeBadge code={country.code} />
+                          <Typography component="span" sx={{ fontWeight: 700 }}>
+                            {country.dialCode}
+                          </Typography>
+                        </Stack>
+                      );
+                    }}
                     slotProps={{
-                      htmlInput: {
-                        "aria-label": "Numero para 2FA",
+                      input: {
+                        "aria-label": "País",
                       },
                     }}
-                    type="tel"
-                    value={twoFactorPhoneNumber}
-                  />
-                  <Typography className="auth-feedback auth-feedback--hint" color="text.secondary">
-                    Usa formato E.164. Si lo dejas vacio, el backend intentara usar
-                    `TWO_FACTOR_PHONE_OVERRIDE`.
-                  </Typography>
-                </>
-              ) : null}
+                    sx={{
+                      ".MuiSelect-select": {
+                        alignItems: "center",
+                        display: "flex",
+                        minHeight: 34,
+                      },
+                    }}
+                    value={phoneCountryCode}
+                  >
+                    {phoneCountries.map((country) => (
+                      <MenuItem key={country.code} value={country.code}>
+                        <Stack
+                          direction="row"
+                          spacing={1.25}
+                          sx={{ alignItems: "center", py: 0.35, width: "100%" }}
+                        >
+                          <CountryCodeBadge code={country.code} />
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography sx={{ fontWeight: 800 }}>{country.label}</Typography>
+                            <Typography color="text.secondary" variant="caption">
+                              Prefijo {country.dialCode}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <TextField
+                  disabled={isSubmitting}
+                  label="Número de celular"
+                  onChange={(event) => setPhoneNumber(event.target.value)}
+                  placeholder="71234567"
+                  slotProps={{
+                    htmlInput: {
+                      "aria-label": "Número de celular",
+                      inputMode: "tel",
+                      required: true,
+                    },
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">{selectedCountry.dialCode}</InputAdornment>
+                      ),
+                    },
+                  }}
+                  type="tel"
+                  value={phoneNumber}
+                />
+              </Box>
+
+              <Typography className="auth-feedback auth-feedback--hint" color="text.secondary">
+                Ingrese su número de celular, por favor.
+              </Typography>
             </>
-          ) : null}
+          )}
 
           {errorMessage ? (
             <Alert className="auth-feedback auth-feedback--error" severity="error">
@@ -262,25 +479,11 @@ export function LoginCard({
             {mode === "login"
               ? isSubmitting
                 ? "Validando..."
-                : "Iniciar sesion"
+                : "Iniciar sesión"
               : isSubmitting
                 ? "Registrando..."
                 : "Registrarse"}
           </Button>
-
-          <Link
-            className="link-button"
-            component="button"
-            disabled={isSubmitting}
-            onClick={() => {
-              setSuccessMessage(null);
-              setMode((value) => (value === "login" ? "register" : "login"));
-            }}
-            type="button"
-            underline="hover"
-          >
-            {mode === "login" ? "Crear una cuenta" : "Ya tengo cuenta"}
-          </Link>
         </Stack>
       </CardContent>
     </Card>

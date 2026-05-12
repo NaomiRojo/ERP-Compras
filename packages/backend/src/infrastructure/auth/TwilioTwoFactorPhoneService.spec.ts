@@ -49,7 +49,7 @@ describe("TwilioTwoFactorPhoneService", () => {
     expect(body.get("Body")).toContain("123456");
   });
 
-  test("usa plantilla de WhatsApp cuando hay ContentSid configurado", async () => {
+  test("usa el codigo como primera variable de plantilla de WhatsApp", async () => {
     const capturedRequest: { current: CapturedRequest | null } = { current: null };
     globalThis.fetch = createFetchSpy(capturedRequest);
 
@@ -74,7 +74,7 @@ describe("TwilioTwoFactorPhoneService", () => {
     expect(body.get("To")).toBe("whatsapp:+59170059346");
     expect(body.get("From")).toBe("whatsapp:+14155238886");
     expect(body.get("ContentSid")).toBe("HXVERIFY");
-    expect(body.get("ContentVariables")).toBe(JSON.stringify({ 1: "ERP", 2: "123456" }));
+    expect(body.get("ContentVariables")).toBe(JSON.stringify({ 1: "123456" }));
     expect(body.get("Body")).toBeNull();
   });
 

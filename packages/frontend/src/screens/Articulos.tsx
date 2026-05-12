@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import CloseIcon from "@mui/icons-material/Close";
+import { Box, Drawer, IconButton } from "@mui/material";
 
 import { ArticleEditor } from "../components/Articles/ArticleEditor";
 import { Badge } from "../components/Common/Badge";
@@ -260,6 +262,7 @@ export function ArticulosScreen({
 
   const showFieldError = (field: ArticleField): string | undefined =>
     validationActive ? fieldErrors[field] : undefined;
+  const editorOpen = canManage && editorMode !== null;
 
   return (
     <div className="stack">
@@ -292,8 +295,8 @@ export function ArticulosScreen({
           <Badge key={`${article.id}-status`} tone={article.activo ? "success" : "neutral"}>
             {article.activo ? "Activo" : "Inactivo"}
           </Badge>,
-            <div className="action-row" key={`${article.id}-actions`}>
-              <PermissionGate disabled={!canManage} reason="Tu rol no tiene permiso para editar articulos.">
+          <div className="action-row" key={`${article.id}-actions`}>
+            <PermissionGate disabled={!canManage} reason="Tu rol no tiene permiso para editar articulos.">
               <button
                 className="link-button"
                 disabled={isSubmitting || !canManage}
@@ -302,8 +305,8 @@ export function ArticulosScreen({
               >
                 Editar
               </button>
-              </PermissionGate>
-              <PermissionGate disabled={!canManage} reason="Tu rol no tiene permiso para eliminar articulos.">
+            </PermissionGate>
+            <PermissionGate disabled={!canManage} reason="Tu rol no tiene permiso para eliminar articulos.">
               <button
                 className="link-button link-button--danger"
                 disabled={isSubmitting || !canManage}
@@ -314,29 +317,46 @@ export function ArticulosScreen({
               >
                 Eliminar
               </button>
-              </PermissionGate>
-            </div>
+            </PermissionGate>
+          </div>,
         ])}
       />
 
-      {canManage && editorMode ? (
-        <ArticleEditor
-          errorMessage={errorMessage}
-          form={form}
-          grupoOptions={grupoOptions}
-          impuestoOptions={impuestoOptions}
-          isSubmitting={isSubmitting}
-          mode={editorMode}
-          onCancel={resetForm}
-          onFieldChange={updateFormField}
-          onSubmit={submit}
-          showFieldError={showFieldError}
-        />
-      ) : errorMessage ? (
+      {errorMessage && !editorOpen ? (
         <section className="panel">
           <p className="auth-feedback auth-feedback--error">{errorMessage}</p>
         </section>
       ) : null}
+
+      <Drawer
+        anchor="right"
+        className="crud-editor-drawer"
+        onClose={resetForm}
+        open={editorOpen}
+        slotProps={{ paper: { className: "crud-editor-drawer__paper" } }}
+        transitionDuration={0}
+        variant="persistent"
+      >
+        <Box className="crud-editor-drawer__close">
+          <IconButton aria-label="Cerrar formulario de articulo" onClick={resetForm} size="small">
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+        {editorMode ? (
+          <ArticleEditor
+            errorMessage={errorMessage}
+            form={form}
+            grupoOptions={grupoOptions}
+            impuestoOptions={impuestoOptions}
+            isSubmitting={isSubmitting}
+            mode={editorMode}
+            onCancel={resetForm}
+            onFieldChange={updateFormField}
+            onSubmit={submit}
+            showFieldError={showFieldError}
+          />
+        ) : null}
+      </Drawer>
     </div>
   );
 }
