@@ -30,24 +30,27 @@ export const createAppTheme = (mode: PaletteMode) => createTheme({
     divider: mode === "dark" ? "rgba(231, 238, 252, 0.1)" : "rgba(20, 32, 51, 0.08)",
   },
   shape: {
-    borderRadius: 8,
+    borderRadius: 14,
   },
   typography: {
-    fontFamily: 'Inter, "Segoe UI", sans-serif',
+    fontFamily: 'Manrope, "Segoe UI", sans-serif',
     button: {
       fontWeight: 700,
       letterSpacing: 0,
       textTransform: "none",
     },
     h1: {
+      fontFamily: '"Space Grotesk", Manrope, "Segoe UI", sans-serif',
       fontWeight: 800,
       letterSpacing: 0,
     },
     h2: {
+      fontFamily: '"Space Grotesk", Manrope, "Segoe UI", sans-serif',
       fontWeight: 800,
       letterSpacing: 0,
     },
     h3: {
+      fontFamily: '"Space Grotesk", Manrope, "Segoe UI", sans-serif',
       fontWeight: 800,
       letterSpacing: 0,
     },
@@ -59,7 +62,8 @@ export const createAppTheme = (mode: PaletteMode) => createTheme({
       },
       styleOverrides: {
         root: {
-          minHeight: 40,
+          borderRadius: 999,
+          minHeight: 42,
         },
       },
     },

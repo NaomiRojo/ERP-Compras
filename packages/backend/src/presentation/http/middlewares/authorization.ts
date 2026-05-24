@@ -96,6 +96,21 @@ const routeAuthorizationRules: readonly RouteAuthorizationRule[] = [
     allowedRoleIds: [ROLE_IDS.ADMIN, ROLE_IDS.SUPERVISOR],
   },
   {
+    pathnamePrefix: API_ENDPOINTS.powerBi.compras,
+    methods: ["GET"],
+    allowedRoleIds: [ROLE_IDS.ADMIN, ROLE_IDS.COMPRAS, ROLE_IDS.SUPERVISOR],
+  },
+  {
+    pathnamePrefix: API_ENDPOINTS.powerBi.comprasCsv,
+    methods: ["GET"],
+    allowedRoleIds: [ROLE_IDS.ADMIN, ROLE_IDS.COMPRAS, ROLE_IDS.SUPERVISOR],
+  },
+  {
+    pathnamePrefix: API_ENDPOINTS.powerBi.comprasSql,
+    methods: ["GET"],
+    allowedRoleIds: [ROLE_IDS.ADMIN, ROLE_IDS.COMPRAS, ROLE_IDS.SUPERVISOR],
+  },
+  {
     pathnamePrefix: API_ENDPOINTS.catalogos.base,
     methods: ["GET"],
     allowedRoleIds: readOnlyRoleIds,

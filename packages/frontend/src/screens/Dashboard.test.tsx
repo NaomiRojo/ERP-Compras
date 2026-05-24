@@ -6,8 +6,8 @@ import { DashboardScreen } from "./Dashboard";
 
 const metrics: Metric[] = [
   {
-    hint: "Ordenes pendientes de cierre",
-    label: "Ordenes abiertas",
+    hint: "Proveedor activo",
+    label: "Proveedores activos",
     value: "1",
   },
 ];
@@ -117,14 +117,20 @@ const renderDashboard = (override?: Partial<Parameters<typeof DashboardScreen>[0
   );
 
 describe("DashboardScreen", () => {
-  it("muestra resumen ejecutivo, alertas y actividad reciente de auditoria", () => {
+  it("muestra dashboard gerencial con KPIs, alertas y actividad reciente de auditoria", () => {
     const view = renderDashboard();
 
-    expect(view.getByText("Resumen financiero y operativo")).toBeTruthy();
+    expect(view.getByText("Dashboard principal gerencial")).toBeTruthy();
+    expect(view.getByText("Ordenes de Compra Pendientes")).toBeTruthy();
+    expect(view.getByText("Total Gastado")).toBeTruthy();
+    expect(view.getByText("% de Entregas Tardias")).toBeTruthy();
+    expect(view.getByText("Proveedores Activos")).toBeTruthy();
     expect(view.getByText("1 ordenes")).toBeTruthy();
     expect(view.getByText("1 CxP pendientes")).toBeTruthy();
-    expect(view.getByText("1 alertas stock")).toBeTruthy();
-    expect(view.getByText("Hay 1 articulo(s) sin stock disponible. Revisa inventario antes de nuevas compras.")).toBeTruthy();
+    expect(view.getByText("3 alertas criticas")).toBeTruthy();
+    expect(view.getByText("Alertas criticas")).toBeTruthy();
+    expect(view.getByText("1x Entregas retrasadas")).toBeTruthy();
+    expect(view.getByText("1x Rupturas de stock")).toBeTruthy();
 
     expect(view.getByText("Actividad reciente")).toBeTruthy();
     expect(view.getByText("OrdenCompra")).toBeTruthy();
@@ -138,6 +144,6 @@ describe("DashboardScreen", () => {
     const view = renderDashboard({ auditoria: [] });
 
     expect(view.queryByText("Actividad reciente")).toBeNull();
-    expect(view.getByText("Ordenes criticas")).toBeTruthy();
+    expect(view.getByText("Ultimas ordenes de compra")).toBeTruthy();
   });
 });

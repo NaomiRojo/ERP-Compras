@@ -10,6 +10,7 @@ import { createRoot } from "react-dom/client";
 import { HashRouter } from "react-router-dom";
 
 import { App } from "./App";
+import { AppErrorBoundary } from "./components/App/AppErrorBoundary";
 import { ColorModeProvider } from "./components/Common/ColorMode";
 import { NotificationsProvider } from "./components/Common/Notifications";
 import "./styles/globals.css";
@@ -17,13 +18,15 @@ import "./styles/globals.css";
 const elem = document.getElementById("app")!;
 const app = (
   <StrictMode>
-    <ColorModeProvider>
-      <NotificationsProvider>
-        <HashRouter>
-          <App />
-        </HashRouter>
-      </NotificationsProvider>
-    </ColorModeProvider>
+    <AppErrorBoundary>
+      <ColorModeProvider>
+        <NotificationsProvider>
+          <HashRouter>
+            <App />
+          </HashRouter>
+        </NotificationsProvider>
+      </ColorModeProvider>
+    </AppErrorBoundary>
   </StrictMode>
 );
 

@@ -408,4 +408,146 @@ export const openApiSchemas = {
       fecha: { type: "string", format: "date-time" },
     },
   },
+  PowerBiOrderDetail: {
+    type: "object",
+    properties: {
+      lineNum: { type: "integer" },
+      articuloId: { type: "string", format: "uuid" },
+      sku: { type: "string" },
+      nombre: { type: "string" },
+      grupo: { type: "string" },
+      cantidadTotal: { type: "number" },
+      cantidadPendiente: { type: "number" },
+      precioUnitario: { type: "number" },
+      descuentoLinea: { type: "number" },
+      totalLinea: { type: "number" },
+    },
+  },
+  PowerBiOrder: {
+    type: "object",
+    properties: {
+      id: { type: "string", format: "uuid" },
+      docNum: { type: "integer" },
+      providerId: { type: "string", format: "uuid" },
+      providerName: { type: "string" },
+      status: { type: "string" },
+      currencyId: { type: "integer" },
+      fechaDocumento: { type: "string", format: "date-time" },
+      totalDocumento: { type: "number" },
+      subtotal: { type: "number" },
+      impuestosTotal: { type: "number" },
+      descuentoTotal: { type: "number" },
+      detalles: {
+        type: "array",
+        items: {
+          $ref: "#/components/schemas/PowerBiOrderDetail",
+        },
+      },
+    },
+  },
+  PowerBiComprasDataset: {
+    type: "object",
+    properties: {
+      generatedAt: { type: "string", format: "date-time" },
+      period: {
+        type: "object",
+        properties: {
+          from: { type: "string", nullable: true },
+          to: { type: "string", nullable: true },
+        },
+      },
+      summary: {
+        type: "object",
+        properties: {
+          totalPurchases: { type: "number" },
+          pendingOrders: { type: "integer" },
+          activeProviders: { type: "integer" },
+          productsPurchased: { type: "number" },
+          accountsPayableBalance: { type: "number" },
+          paidAmount: { type: "number" },
+          overdueAccounts: { type: "integer" },
+        },
+      },
+      monthlyPurchases: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            month: { type: "string" },
+            orderCount: { type: "integer" },
+            total: { type: "number" },
+          },
+        },
+      },
+      topProviders: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            provider: { type: "string" },
+            orderCount: { type: "integer" },
+            total: { type: "number" },
+          },
+        },
+      },
+      topProducts: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            sku: { type: "string" },
+            nombre: { type: "string" },
+            quantity: { type: "number" },
+            total: { type: "number" },
+          },
+        },
+      },
+      spendByCategory: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            category: { type: "string" },
+            total: { type: "number" },
+          },
+        },
+      },
+      ordersByStatus: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            status: { type: "string" },
+            count: { type: "integer" },
+          },
+        },
+      },
+      orders: {
+        type: "array",
+        items: {
+          $ref: "#/components/schemas/PowerBiOrder",
+        },
+      },
+    },
+  },
+  PowerBiSqlTemplates: {
+    type: "object",
+    properties: {
+      generatedAt: { type: "string", format: "date-time" },
+      databaseEngine: { type: "string" },
+      notes: {
+        type: "array",
+        items: { type: "string" },
+      },
+      queries: {
+        type: "object",
+        properties: {
+          monthlyPurchases: { type: "string" },
+          topProviders: { type: "string" },
+          topProducts: { type: "string" },
+          spendByCategory: { type: "string" },
+        },
+      },
+    },
+  },
 } as const;

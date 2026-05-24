@@ -22,6 +22,14 @@ const normalizeKnownBackendMessage = (message: string): string => {
   }
 
   if (normalized.toLowerCase().includes("twilio respondio")) {
+    if (normalized.includes("63015")) {
+      return "No se pudo enviar el codigo por WhatsApp: el numero no esta unido al Sandbox de Twilio o la union expiro. Envia el mensaje de union al numero de sandbox y vuelve a intentar.";
+    }
+
+    if (normalized.includes("63016")) {
+      return "No se pudo enviar el codigo por WhatsApp fuera de la ventana de 24 horas. Configura TWILIO_WHATSAPP_CONTENT_SID o inicia conversacion desde el numero destino.";
+    }
+
     return "No se pudo enviar el codigo 2FA por Twilio. Revisa el numero, el canal elegido y la configuracion de Twilio.";
   }
 

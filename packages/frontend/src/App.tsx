@@ -6,6 +6,7 @@ import { AuthContainer } from "./components/Auth/AuthContainer";
 import { useAuthSession } from "./hooks/useAuthSession";
 import { useERPWorkspace } from "./hooks/useERPWorkspace";
 import { RequireAuth } from "./router/guards";
+import { NotFoundScreen, ServerErrorScreen } from "./screens";
 import {
   AUTH_LOGIN_PATH,
   AUTH_TWO_FACTOR_PATH,
@@ -91,10 +92,22 @@ export function App() {
     );
 
   const rootRedirectPath = auth.isAuthenticated ? defaultProtectedPath : authEntryPath;
+  const notFoundActionLabel = auth.isAuthenticated ? "Volver al dashboard" : "Ir a inicio de sesion";
 
   return (
     <Routes>
       <Route element={<Navigate replace to={rootRedirectPath} />} path="/" />
+      <Route
+        element={(
+          <ServerErrorScreen
+            actionLabel={auth.isAuthenticated ? "Volver al dashboard" : "Ir a inicio de sesion"}
+            onPrimaryAction={() => {
+              window.location.hash = auth.isAuthenticated ? defaultProtectedPath : authEntryPath;
+            }}
+          />
+        )}
+        path="/error/server"
+      />
       <Route
         element={
           auth.isAuthenticated ? (
@@ -129,7 +142,17 @@ export function App() {
         }
         path="/app/:view"
       />
-      <Route element={<Navigate replace to={rootRedirectPath} />} path="*" />
+      <Route
+        element={(
+          <NotFoundScreen
+            actionLabel={notFoundActionLabel}
+            onPrimaryAction={() => {
+              window.location.hash = auth.isAuthenticated ? defaultProtectedPath : authEntryPath;
+            }}
+          />
+        )}
+        path="*"
+      />
     </Routes>
   );
 }

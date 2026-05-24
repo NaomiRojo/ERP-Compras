@@ -7,4 +7,6 @@ export { OrdenesScreen } from "./Ordenes";
 export { PagosScreen } from "./Pagos";
 export { ProveedoresScreen } from "./Proveedores";
 export { ReportesScreen } from "./Reportes";
+export { NotFoundScreen } from "./NotFound";
+export { ServerErrorScreen } from "./ServerError";
 export { UsuariosScreen } from "./Usuarios";

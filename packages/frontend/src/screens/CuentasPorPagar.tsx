@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { Badge } from "../components/Common/Badge";
-import { DataTable } from "../components/Common/DataTable";
+import { DataTable, type DataTableFilter } from "../components/Common/DataTable";
 import { PermissionGate } from "../components/Common/PermissionGate";
 import { SearchBar } from "../components/Common/SearchBar";
 import { resolveTone } from "../mocks/data";
@@ -91,6 +91,7 @@ export function CuentasPorPagarScreen({
 }: CuentasPorPagarScreenProps) {
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [searchTerm, setSearchTerm] = useState(readInitialSearchTerm);
+  const [statusFilter, setStatusFilter] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [validationActive, setValidationActive] = useState(false);
@@ -176,6 +177,20 @@ export function CuentasPorPagarScreen({
 
   const showFieldError = (field: CxpField): string | undefined =>
     validationActive ? fieldErrors[field] : undefined;
+  const tableFilters: DataTableFilter[] = [
+    {
+      id: "estado",
+      label: "Estado",
+      value: statusFilter,
+      onChange: setStatusFilter,
+      options: [
+        { label: "Todos", value: "" },
+        ...[...new Set(filteredCuentas.map((cuenta) => cuenta.estado))]
+          .sort((a, b) => a.localeCompare(b, "es"))
+          .map((estado) => ({ label: estado, value: estado })),
+      ],
+    },
+  ];
 
   return (
     <div className="stack">
@@ -183,6 +198,9 @@ export function CuentasPorPagarScreen({
         title="Cuentas por pagar"
         description="Facturas pendientes y saldos."
         headers={["Proveedor", "Factura", "Total", "Saldo", "Vencimiento", "Estado"]}
+        filters={tableFilters}
+        pagination={{ enabled: true, defaultRowsPerPage: 10, rowsPerPageOptions: [5, 10, 25, 50] }}
+        sortableColumns={[0, 1, 2, 3, 4, 5]}
         actions={
           <div className="action-row">
             <SearchBar
@@ -207,6 +225,13 @@ export function CuentasPorPagarScreen({
           </div>
         }
         emptyMessage="No hay cuentas por pagar que coincidan con la busqueda."
+        rowMeta={filteredCuentas.map((item) => ({
+          id: item.id,
+          filterValues: {
+            estado: item.estado,
+          },
+          sortValues: [item.proveedor, item.factura, item.total, item.saldo, item.vencimiento, item.estado],
+        }))}
         rows={filteredCuentas.map((item) => [
           item.proveedor,
           item.factura,

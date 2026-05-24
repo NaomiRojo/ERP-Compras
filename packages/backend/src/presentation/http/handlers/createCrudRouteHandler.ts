@@ -61,9 +61,14 @@ export const createCrudRouteHandler = <TCreateDto, TUpdateDto, TEntity, TContext
     origin: string | null,
   ): Promise<Response | null> => {
     if (request.method === "GET" && pathname === basePath) {
-      const context = createContext();
-      const entities = await list(context, request);
-      return json(entities.map(serialize), 200, origin);
+      try {
+        const context = createContext();
+        const entities = await list(context, request);
+        return json(entities.map(serialize), 200, origin);
+      } catch (error) {
+        const message = resolveErrorMessage(error);
+        return json({ message }, 500, origin);
+      }
     }
 
     const itemId = extractItemId(pathname, basePath);

@@ -52,4 +52,9 @@ export const API_ENDPOINTS = {
   },
   auditoria: "/api/auditoria",
   auditoriaById: "/api/auditoria/{id}",
+  powerBi: {
+    compras: "/api/powerbi/compras",
+    comprasCsv: "/api/powerbi/compras/csv",
+    comprasSql: "/api/powerbi/compras/sql",
+  },
 } as const;

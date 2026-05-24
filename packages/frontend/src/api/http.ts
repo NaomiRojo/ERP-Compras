@@ -144,6 +144,10 @@ export async function apiRequest<TResponse, TBody = unknown>(
   const payload = await maybeParseJson(response);
 
   if (!response.ok) {
+    if (response.status >= 500 && typeof window !== "undefined") {
+      window.location.hash = "/error/server";
+    }
+
     throw new ApiError(
       response.status,
       resolveErrorMessage(`Error HTTP ${response.status}`, payload),

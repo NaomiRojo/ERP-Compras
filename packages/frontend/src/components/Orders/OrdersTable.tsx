@@ -2,7 +2,7 @@ import { resolveTone } from "../../mocks/data";
 import type { Order } from "../../types";
 import { Badge } from "../Common/Badge";
 import { CrudToolbar } from "../Common/CrudToolbar";
-import { DataTable } from "../Common/DataTable";
+import { DataTable, type DataTableFilter } from "../Common/DataTable";
 import { PermissionGate } from "../Common/PermissionGate";
 
 type OrdersTableProps = {
@@ -23,6 +23,8 @@ type OrdersTableProps = {
   onSearchTermChange: (value: string) => void;
   isDraftOrder: (order: Order) => boolean;
   isReceivableOrder: (order: Order) => boolean;
+  statusFilter: string;
+  onStatusFilterChange: (value: string) => void;
 };
 
 export function OrdersTable({
@@ -43,12 +45,33 @@ export function OrdersTable({
   onSearchTermChange,
   isDraftOrder,
   isReceivableOrder,
+  statusFilter,
+  onStatusFilterChange,
 }: OrdersTableProps) {
+  const statusOptions = [
+    { label: "Todos", value: "" },
+    ...[...new Set(orders.map((order) => order.estado))]
+      .sort((a, b) => a.localeCompare(b, "es"))
+      .map((status) => ({ label: status, value: status })),
+  ];
+  const tableFilters: DataTableFilter[] = [
+    {
+      id: "estado",
+      label: "Estado",
+      options: statusOptions,
+      value: statusFilter,
+      onChange: onStatusFilterChange,
+    },
+  ];
+
   return (
     <DataTable
       title="Ordenes de compra"
       description="Gestion documental completa: borradores, aprobacion y recepcion."
       headers={["Documento", "Proveedor", "Fecha", "Estado", "Total", "Pendiente", "Acciones"]}
+      filters={tableFilters}
+      pagination={{ enabled: true, defaultRowsPerPage: 10, rowsPerPageOptions: [5, 10, 25, 50] }}
+      sortableColumns={[0, 1, 2, 3, 4, 5]}
       actions={
         <CrudToolbar
           createActionDisabled={createDisabled}
@@ -61,6 +84,20 @@ export function OrdersTable({
         />
       }
       emptyMessage="No hay ordenes que coincidan con la busqueda."
+      rowMeta={orders.map((order) => {
+        const pendiente = order.lines.reduce(
+          (accumulator, line) => accumulator + line.pendingQty,
+          0,
+        );
+
+        return {
+          id: order.id,
+          filterValues: {
+            estado: order.estado,
+          },
+          sortValues: [Number(order.docNum), order.proveedor, order.fecha, order.estado, order.total, pendiente],
+        };
+      })}
       rows={orders.map((order) => {
         const pendiente = order.lines.reduce(
           (accumulator, line) => accumulator + line.pendingQty,

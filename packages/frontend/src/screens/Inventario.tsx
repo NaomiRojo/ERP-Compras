@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { Badge } from "../components/Common/Badge";
-import { DataTable } from "../components/Common/DataTable";
+import { DataTable, type DataTableFilter } from "../components/Common/DataTable";
 import { SearchBar } from "../components/Common/SearchBar";
 import type { InventoryRow, Movement } from "../types";
 
@@ -22,6 +22,7 @@ const readInitialSearchTerm = (): string => {
 
 export function InventarioScreen({ inventario, movimientos }: InventarioScreenProps) {
   const [searchTerm, setSearchTerm] = useState(readInitialSearchTerm);
+  const [movementTypeFilter, setMovementTypeFilter] = useState("");
   const [selectedMovementId, setSelectedMovementId] = useState<string | null>(movimientos[0]?.id ?? null);
 
   const filteredInventory = useMemo(() => {
@@ -61,6 +62,19 @@ export function InventarioScreen({ inventario, movimientos }: InventarioScreenPr
     movimientos.find((movement) => movement.id === selectedMovementId) ??
     filteredMovements[0] ??
     null;
+  const movementFilters: DataTableFilter[] = [
+    {
+      id: "tipo",
+      label: "Tipo",
+      value: movementTypeFilter,
+      onChange: setMovementTypeFilter,
+      options: [
+        { label: "Todos", value: "" },
+        { label: "Entradas", value: "ENT" },
+        { label: "Salidas", value: "SAL" },
+      ],
+    },
+  ];
 
   return (
     <div className="stack">
@@ -68,6 +82,8 @@ export function InventarioScreen({ inventario, movimientos }: InventarioScreenPr
         title="Stocks actuales"
         description="Disponibilidad por almacen con busqueda operativa."
         headers={["Articulo", "Almacen", "Fisico", "Comprometido", "Solicitado", "Disponible"]}
+        pagination={{ enabled: true, defaultRowsPerPage: 10, rowsPerPageOptions: [5, 10, 25, 50] }}
+        sortableColumns={[0, 1, 2, 3, 4, 5]}
         actions={
           <SearchBar
             onChange={setSearchTerm}
@@ -76,6 +92,10 @@ export function InventarioScreen({ inventario, movimientos }: InventarioScreenPr
           />
         }
         emptyMessage="No hay stock que coincida con la busqueda."
+        rowMeta={filteredInventory.map((item) => ({
+          id: item.id,
+          sortValues: [item.sku, item.almacen, item.fisico, item.comprometido, item.solicitado, item.disponible],
+        }))}
         rows={filteredInventory.map((item) => [
           <div key={`${item.sku}-label`}>
             <strong>{item.sku}</strong>
@@ -93,7 +113,17 @@ export function InventarioScreen({ inventario, movimientos }: InventarioScreenPr
         title="Movimientos"
         description="Ultimos eventos de stock con acceso al detalle del movimiento."
         headers={["Fecha", "SKU", "Tipo", "Cant.", "Referencia", "Comentario", "Detalle"]}
+        filters={movementFilters}
+        pagination={{ enabled: true, defaultRowsPerPage: 10, rowsPerPageOptions: [5, 10, 25, 50] }}
+        sortableColumns={[0, 1, 2, 3, 4, 5]}
         emptyMessage="No hay movimientos que coincidan con la busqueda."
+        rowMeta={filteredMovements.map((movement) => ({
+          id: movement.id,
+          filterValues: {
+            tipo: movement.tipo,
+          },
+          sortValues: [movement.fecha, movement.sku, movement.tipo, movement.cant, movement.ref, movement.comentario],
+        }))}
         rows={filteredMovements.map((movement) => [
           movement.fecha,
           movement.sku,

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-import { Alert, Snackbar } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import { Alert, IconButton, Slide, Snackbar, type SlideProps } from "@mui/material";
 
 type NotificationSeverity = "success" | "info" | "warning" | "error";
 
@@ -18,15 +19,19 @@ type NotificationsContextValue = {
 const NotificationsContext = createContext<NotificationsContextValue | null>(null);
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
-  const [notification, setNotification] = useState<Notification | null>(null);
+  const [queue, setQueue] = useState<Notification[]>([]);
+  const activeNotification = queue[0] ?? null;
 
   const notify = useCallback(
     (message: string, severity: NotificationSeverity = "info") => {
-      setNotification({
-        id: Date.now(),
-        message,
-        severity,
-      });
+      setQueue((current) => [
+        ...current,
+        {
+          id: Date.now(),
+          message,
+          severity,
+        },
+      ]);
     },
     [],
   );
@@ -45,18 +50,36 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       {children}
       <Snackbar
         anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-        autoHideDuration={5200}
-        key={notification?.id}
-        onClose={() => setNotification(null)}
-        open={notification !== null}
+        autoHideDuration={5400}
+        key={activeNotification?.id}
+        onClose={(_, reason) => {
+          if (reason === "clickaway") {
+            return;
+          }
+
+          setQueue((current) => current.slice(1));
+        }}
+        open={activeNotification !== null}
+        slots={{ transition: Slide }}
+        slotProps={{ transition: { direction: "left" } as SlideProps }}
       >
         <Alert
-          onClose={() => setNotification(null)}
-          severity={notification?.severity ?? "info"}
-          sx={{ width: "100%" }}
+          action={
+            <IconButton
+              aria-label="Cerrar notificacion"
+              color="inherit"
+              onClick={() => setQueue((current) => current.slice(1))}
+              size="small"
+            >
+              <CloseIcon fontSize="inherit" />
+            </IconButton>
+          }
+          onClose={() => setQueue((current) => current.slice(1))}
+          severity={activeNotification?.severity ?? "info"}
+          sx={{ maxWidth: 480, width: "100%" }}
           variant="filled"
         >
-          {notification?.message}
+          {activeNotification?.message}
         </Alert>
       </Snackbar>
     </NotificationsContext.Provider>

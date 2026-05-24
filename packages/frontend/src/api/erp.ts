@@ -17,6 +17,8 @@ import type {
   MonedaApi,
   OrdenCompraApi,
   PagoProveedorApi,
+  PowerBiComprasDatasetApi,
+  PowerBiSqlTemplatesApi,
   ProveedorApi,
   RegistrarRecepcionOrdenCompraDto,
   RegistrarRecepcionOrdenCompraResponse,
@@ -25,6 +27,7 @@ import type {
   TipoDocumentoApi,
   UsuarioApi,
 } from "../types/api";
+import { apiBaseUrl } from "../config";
 import { apiRequest } from "./http";
 
 type FetchERPDataOptions = {
@@ -236,6 +239,36 @@ export const registrarPagoCuentaPorPagar = (
     },
   );
 
+type PowerBiRangeOptions = {
+  from?: string;
+  to?: string;
+};
+
+const buildPowerBiQuery = (options?: PowerBiRangeOptions): string => {
+  const params = new URLSearchParams();
+  if (options?.from) {
+    params.set("from", options.from);
+  }
+
+  if (options?.to) {
+    params.set("to", options.to);
+  }
+
+  const query = params.toString();
+  return query ? `?${query}` : "";
+};
+
+export const fetchPowerBiComprasDataset = (
+  options?: PowerBiRangeOptions,
+): Promise<PowerBiComprasDatasetApi> =>
+  apiRequest<PowerBiComprasDatasetApi>(`/api/powerbi/compras${buildPowerBiQuery(options)}`);
+
+export const fetchPowerBiSqlTemplates = (): Promise<PowerBiSqlTemplatesApi> =>
+  apiRequest<PowerBiSqlTemplatesApi>("/api/powerbi/compras/sql");
+
+export const buildPowerBiCsvExportUrl = (options?: PowerBiRangeOptions): string =>
+  `${apiBaseUrl}/api/powerbi/compras/csv${buildPowerBiQuery(options)}`;
+
 export type ERPService = {
   fetchERPData: typeof fetchERPData;
   createProveedor: typeof createProveedor;
@@ -251,6 +284,9 @@ export type ERPService = {
   registerRecepcionOrdenCompra: typeof registerRecepcionOrdenCompra;
   createCuentaPorPagar: typeof createCuentaPorPagar;
   registrarPagoCuentaPorPagar: typeof registrarPagoCuentaPorPagar;
+  fetchPowerBiComprasDataset: typeof fetchPowerBiComprasDataset;
+  fetchPowerBiSqlTemplates: typeof fetchPowerBiSqlTemplates;
+  buildPowerBiCsvExportUrl: typeof buildPowerBiCsvExportUrl;
 };
 
 export const erpService: ERPService = {
@@ -268,4 +304,7 @@ export const erpService: ERPService = {
   registerRecepcionOrdenCompra,
   createCuentaPorPagar,
   registrarPagoCuentaPorPagar,
+  fetchPowerBiComprasDataset,
+  fetchPowerBiSqlTemplates,
+  buildPowerBiCsvExportUrl,
 };

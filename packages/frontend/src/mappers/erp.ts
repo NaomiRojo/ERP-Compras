@@ -271,54 +271,61 @@ export const mapERPApiDataToAppData = (data: ERPApiData): AppData => {
 };
 
 const calculateDashboardMetrics = (data: ERPApiData): Metric[] => {
-  const hoy = todayIsoDate();
+  const hoy = new Date();
+  const hoyIso = todayIsoDate();
+  const currentMonthKey = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
   const estadoById = new Map(data.catalogos.estadosDocumento.map((estado) => [estado.id, estado.codigo]));
 
   const ordenesCompra = data.ordenes.filter((orden) => orden.tipoDocId === PEDIDO_COMPRA_TIPO_DOC_ID);
   const recepcionesHoy = data.ordenes.filter(
-    (orden) => orden.tipoDocId === ENTRADA_MERCADERIA_TIPO_DOC_ID && orden.fechaDocumento.slice(0, 10) === hoy,
+    (orden) => orden.tipoDocId === ENTRADA_MERCADERIA_TIPO_DOC_ID && orden.fechaDocumento.slice(0, 10) === hoyIso,
   );
 
   const ordenesAbiertas = ordenesCompra.filter((orden) => {
     const estadoCodigo = estadoById.get(orden.estadoId);
     return estadoCodigo === "BORRADOR" || estadoCodigo === "APROBADO" || estadoCodigo === "ABIERTO";
   });
+  const ordenesDelMes = ordenesCompra.filter((orden) => {
+    const fecha = new Date(orden.fechaDocumento);
+    if (Number.isNaN(fecha.getTime())) {
+      return false;
+    }
 
-  const saldoPendienteTotal = data.cuentasPorPagar.reduce(
-    (accumulator, cuenta) => accumulator + cuenta.saldoPendiente,
-    0,
-  );
-
-  const haceSieteDias = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const pagosUltimaSemana = data.pagosProveedor.filter((pago) => {
-    const fecha = new Date(pago.fechaPago).getTime();
-    return !Number.isNaN(fecha) && fecha >= haceSieteDias;
+    const monthKey = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, "0")}`;
+    return monthKey === currentMonthKey;
   });
-  const montoPagosUltimaSemana = pagosUltimaSemana.reduce(
-    (accumulator, pago) => accumulator + pago.monto,
+  const montoComprasMes = ordenesDelMes.reduce(
+    (accumulator, orden) => accumulator + orden.totalDocumento,
     0,
   );
+  const cantidadProductosComprados = ordenesDelMes.reduce(
+    (accumulator, orden) =>
+      accumulator +
+      orden.detalles.reduce((lineTotal, detalle) => lineTotal + detalle.cantidadTotal, 0),
+    0,
+  );
+  const proveedoresActivos = data.proveedores.filter((proveedor) => proveedor.activo).length;
 
   return [
     {
-      label: "Ordenes abiertas",
+      label: "Compras del mes",
+      value: `Bs ${formatCurrencyAmount(montoComprasMes)}`,
+      hint: `${ordenesDelMes.length} ordenes registradas este mes`,
+    },
+    {
+      label: "Ordenes pendientes",
       value: `${ordenesAbiertas.length}`,
-      hint: `Total de ordenes en BORRADOR/APROBADO/ABIERTO`,
+      hint: `Estados BORRADOR/APROBADO/ABIERTO`,
     },
     {
-      label: "Recepciones hoy",
-      value: `${recepcionesHoy.length}`,
-      hint: `Documentos de entrada registrados hoy`,
+      label: "Proveedores activos",
+      value: `${proveedoresActivos}`,
+      hint: `${data.proveedores.length - proveedoresActivos} inactivos`,
     },
     {
-      label: "CxP pendiente",
-      value: `Bs ${formatCurrencyAmount(saldoPendienteTotal)}`,
-      hint: `Saldo acumulado por pagar`,
-    },
-    {
-      label: "Pagos 7 dias",
-      value: `Bs ${formatCurrencyAmount(montoPagosUltimaSemana)}`,
-      hint: `${pagosUltimaSemana.length} pagos en la ultima semana`,
+      label: "Productos comprados",
+      value: `${cantidadProductosComprados.toLocaleString("es-BO")}`,
+      hint: `Unidades en ordenes del mes`,
     },
   ];
 };

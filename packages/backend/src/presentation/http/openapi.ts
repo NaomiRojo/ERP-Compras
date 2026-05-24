@@ -22,6 +22,11 @@ export const openApiDocument = {
     { name: "Proveedores" },
     { name: "Articulos" },
     { name: "OrdenesCompra" },
+    { name: "CuentasPorPagar" },
+    { name: "PagosProveedor" },
+    { name: "Inventario" },
+    { name: "Auditoria" },
+    { name: "PowerBI" },
   ],
   components: {
     securitySchemes: bearerSecurityScheme,

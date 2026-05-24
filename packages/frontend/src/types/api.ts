@@ -292,3 +292,85 @@ export type ERPApiData = {
   auditoriaEventos: AuditoriaEventoApi[];
   catalogos: CatalogosApi;
 };
+
+export type PowerBiOrderDetailApi = {
+  lineNum: number;
+  articuloId: string;
+  sku: string;
+  nombre: string;
+  grupo: string;
+  cantidadTotal: number;
+  cantidadPendiente: number;
+  precioUnitario: number;
+  descuentoLinea: number;
+  totalLinea: number;
+};
+
+export type PowerBiOrderApi = {
+  id: string;
+  docNum: number;
+  providerId: string;
+  providerName: string;
+  status: string;
+  currencyId: number;
+  fechaDocumento: string;
+  totalDocumento: number;
+  subtotal: number;
+  impuestosTotal: number;
+  descuentoTotal: number;
+  detalles: PowerBiOrderDetailApi[];
+};
+
+export type PowerBiComprasDatasetApi = {
+  generatedAt: string;
+  period: {
+    from: string | null;
+    to: string | null;
+  };
+  summary: {
+    totalPurchases: number;
+    pendingOrders: number;
+    activeProviders: number;
+    productsPurchased: number;
+    accountsPayableBalance: number;
+    paidAmount: number;
+    overdueAccounts: number;
+  };
+  monthlyPurchases: Array<{
+    month: string;
+    orderCount: number;
+    total: number;
+  }>;
+  topProviders: Array<{
+    provider: string;
+    orderCount: number;
+    total: number;
+  }>;
+  topProducts: Array<{
+    sku: string;
+    nombre: string;
+    quantity: number;
+    total: number;
+  }>;
+  spendByCategory: Array<{
+    category: string;
+    total: number;
+  }>;
+  ordersByStatus: Array<{
+    status: string;
+    count: number;
+  }>;
+  orders: PowerBiOrderApi[];
+};
+
+export type PowerBiSqlTemplatesApi = {
+  generatedAt: string;
+  databaseEngine: string;
+  notes: string[];
+  queries: {
+    monthlyPurchases: string;
+    topProviders: string;
+    topProducts: string;
+    spendByCategory: string;
+  };
+};

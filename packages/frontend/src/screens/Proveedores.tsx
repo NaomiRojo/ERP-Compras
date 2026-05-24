@@ -4,7 +4,7 @@ import { Box, Drawer, IconButton } from "@mui/material";
 
 import { Badge } from "../components/Common/Badge";
 import { CrudToolbar } from "../components/Common/CrudToolbar";
-import { DataTable } from "../components/Common/DataTable";
+import { DataTable, type DataTableFilter } from "../components/Common/DataTable";
 import { PermissionGate } from "../components/Common/PermissionGate";
 import { ProviderEditor } from "../components/Providers/ProviderEditor";
 import type { Provider } from "../types";
@@ -137,6 +137,7 @@ export function ProveedoresScreen({
   const [editorMode, setEditorMode] = useState<EditorMode | null>(null);
   const [editingProviderId, setEditingProviderId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [validationActive, setValidationActive] = useState(false);
@@ -273,6 +274,19 @@ export function ProveedoresScreen({
   const showFieldError = (field: ProviderField): string | undefined =>
     validationActive ? fieldErrors[field] : undefined;
   const editorOpen = canManage && editorMode !== null;
+  const tableFilters: DataTableFilter[] = [
+    {
+      id: "estado",
+      label: "Estado",
+      value: statusFilter,
+      onChange: setStatusFilter,
+      options: [
+        { label: "Todos", value: "" },
+        { label: "Activos", value: "ACTIVO" },
+        { label: "Inactivos", value: "INACTIVO" },
+      ],
+    },
+  ];
 
   return (
     <div className="stack">
@@ -280,6 +294,9 @@ export function ProveedoresScreen({
         title="Proveedores"
         description="Directorio maestro con datos comerciales y control del maestro activo."
         headers={["Codigo", "Nombre", "Contacto", "Moneda", "Balance", "Estado", "Acciones"]}
+        filters={tableFilters}
+        pagination={{ enabled: true, defaultRowsPerPage: 10, rowsPerPageOptions: [5, 10, 25, 50] }}
+        sortableColumns={[0, 1, 2, 3, 4, 5]}
         actions={
           <CrudToolbar
             createActionDisabledReason="Tu rol no tiene permiso para crear proveedores."
@@ -291,6 +308,20 @@ export function ProveedoresScreen({
           />
         }
         emptyMessage="No hay proveedores que coincidan con la busqueda."
+        rowMeta={filteredProviders.map((provider) => ({
+          id: provider.id,
+          filterValues: {
+            estado: provider.activo ? "ACTIVO" : "INACTIVO",
+          },
+          sortValues: [
+            provider.cardCode,
+            provider.cardName,
+            provider.email,
+            provider.moneda,
+            provider.balance,
+            provider.activo ? 1 : 0,
+          ],
+        }))}
         rows={filteredProviders.map((provider) => [
           <div key={`${provider.id}-code`}>
             <strong>{provider.cardCode}</strong>

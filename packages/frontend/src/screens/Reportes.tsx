@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -23,13 +23,23 @@ import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
 import CreditScoreIcon from "@mui/icons-material/CreditScore";
 import EventBusyIcon from "@mui/icons-material/EventBusy";
 import PaymentsIcon from "@mui/icons-material/Payments";
+import InsightsIcon from "@mui/icons-material/Insights";
+import StorageIcon from "@mui/icons-material/Storage";
+import SyncAltIcon from "@mui/icons-material/SyncAlt";
+import AutoGraphIcon from "@mui/icons-material/AutoGraph";
+import BalanceIcon from "@mui/icons-material/Balance";
+import CandlestickChartIcon from "@mui/icons-material/CandlestickChart";
+import SchemaIcon from "@mui/icons-material/Schema";
 
+import { erpService } from "../api/erp";
 import { BarChartCard, DonutChartCard, LineChartCard, type ChartPoint } from "../components/Common/Charts";
 import { DataTable } from "../components/Common/DataTable";
 import { Badge } from "../components/Common/Badge";
+import { useNotifications } from "../components/Common/Notifications";
 import { resolveTone } from "../mocks/data";
 import { buildViewPath } from "../router/views";
 import type { AppData } from "../types";
+import type { PowerBiComprasDatasetApi, PowerBiSqlTemplatesApi } from "../types/api";
 
 type ReportesScreenProps = {
   data: AppData;
@@ -57,6 +67,13 @@ type SmartAlert = {
   severity: SmartAlertSeverity;
   title: string;
   type: "credito" | "orden" | "cxp" | "stock" | "pago";
+};
+
+type ExecutiveScorecard = {
+  label: string;
+  value: string;
+  hint: string;
+  tone: "error" | "info" | "success" | "warning";
 };
 
 const currencyFormatter = new Intl.NumberFormat("es-BO", {
@@ -102,6 +119,104 @@ const downloadTextFile = (filename: string, content: string, mimeType: string): 
   link.remove();
   URL.revokeObjectURL(url);
 };
+
+const buildPowerBiPbidsFile = (sourceUrl: string): string => {
+  const parsedUrl = new URL(sourceUrl);
+  if (!parsedUrl.searchParams.has("powerbi_key")) {
+    parsedUrl.searchParams.set("powerbi_key", "");
+  }
+  const protocol = parsedUrl.protocol === "https:" ? "https" : "http";
+
+  return JSON.stringify(
+    {
+      version: "0.1",
+      connections: [
+        {
+          details: {
+            protocol,
+            address: {
+              url: parsedUrl.toString(),
+            },
+          },
+          options: {},
+          mode: "Import",
+        },
+      ],
+    },
+    null,
+    2,
+  );
+};
+
+const buildPowerBiEnterpriseThemeFile = (): string =>
+  JSON.stringify(
+    {
+      name: "ERP Compras Empresarial",
+      dataColors: [
+        "#0F4C81",
+        "#1766A6",
+        "#1D7FBF",
+        "#33A1C9",
+        "#2E8B57",
+        "#B66A1E",
+        "#6B7280",
+        "#0E7490",
+        "#A16207",
+        "#BE123C",
+      ],
+      background: "#F7FAFC",
+      foreground: "#0F172A",
+      tableAccent: "#0F4C81",
+      good: "#15803D",
+      neutral: "#A16207",
+      bad: "#B91C1C",
+      minimum: "#DBEAFE",
+      center: "#F59E0B",
+      maximum: "#1D4ED8",
+    },
+    null,
+    2,
+  );
+
+const buildPowerBiPlaybookFile = (datasetUrl: string, csvUrl: string): string => [
+  "# ERP Compras - Playbook de Reporte Empresarial",
+  "",
+  "Este paquete acelera la construccion del reporte ejecutivo en Power BI Desktop.",
+  "",
+  "Importante:",
+  "- El archivo PBIDS conecta los datos, pero NO crea visuales automaticamente.",
+  "- Para tener visuales listos al abrir, debes guardar tu reporte como plantilla PBIT o PBIX una vez armado.",
+  "",
+  "1) Conexion inicial",
+  "- Abre el archivo .pbids descargado desde el ERP.",
+  "- Selecciona modo Import (recomendado).",
+  "",
+  "2) Carga recomendada",
+  `- Dataset JSON: ${datasetUrl}`,
+  `- Dataset CSV:  ${csvUrl}`,
+  "",
+  "3) Aplicar tema empresarial",
+  "- Vista -> Temas -> Buscar temas.",
+  "- Selecciona el archivo JSON de tema empresarial descargado.",
+  "",
+  "4) Paginas sugeridas",
+  "- Resumen Ejecutivo: KPIs, compras mensuales, CxP y pagos.",
+  "- Riesgo Financiero: aging de CxP, vencidas, concentracion por proveedor.",
+  "- Eficiencia Operativa: recepciones pendientes, stock por almacen, top productos.",
+  "",
+  "5) Medidas DAX sugeridas",
+  "- Compras Totales = SUM(orders[totalDocumento])",
+  "- Saldo CxP = SUM(accountsPayable[saldoPendiente])",
+  "- Pagos Totales = SUM(payments[monto])",
+  "- Cobertura de Pago % = DIVIDE([Pagos Totales], [Saldo CxP] + [Pagos Totales], 0)",
+  "",
+  "6) Estandarizacion para la defensa",
+  "- Guarda una version PBIX para demo.",
+  "- Guarda una version PBIT como plantilla reutilizable del equipo.",
+  "",
+  "7) Actualizacion",
+  "- Usa actualizar datos para refrescar el panel sin rehacer visuales.",
+].join("\n");
 
 const toInputDate = (date: Date): string => date.toISOString().slice(0, 10);
 
@@ -236,6 +351,46 @@ const buildCxpSegments = (data: AppData) =>
     return accumulator;
   }, new Map<string, number>()).entries()].map(([label, value]) => ({ label, value }));
 
+const buildPaymentsMonthlySeries = (data: AppData): ChartPoint[] => {
+  const today = new Date();
+  const months = Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(today.getFullYear(), today.getMonth() - (5 - index), 1);
+    return {
+      key: monthKey(date),
+      label: monthLabel(date),
+      value: 0,
+    };
+  });
+  const monthByKey = new Map(months.map((month) => [month.key, month]));
+
+  data.pagos.forEach((pago) => {
+    const parsed = parseReportDate(pago.fecha);
+    if (!parsed) {
+      return;
+    }
+
+    const month = monthByKey.get(monthKey(parsed));
+    if (month) {
+      month.value += pago.monto;
+    }
+  });
+
+  return months.map(({ label, value }) => ({ label, value }));
+};
+
+const buildProviderSpendSeries = (data: AppData): ChartPoint[] => {
+  const spendByProvider = new Map<string, number>();
+
+  data.ordenes.forEach((order) => {
+    spendByProvider.set(order.proveedor, (spendByProvider.get(order.proveedor) ?? 0) + order.total);
+  });
+
+  return [...spendByProvider.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([label, value]) => ({ label, value }));
+};
+
 const daysUntil = (value: string): number | null => {
   const parsed = parseReportDate(value);
   if (!parsed) {
@@ -245,6 +400,43 @@ const daysUntil = (value: string): number | null => {
   const today = startOfDay(new Date());
   const target = startOfDay(parsed);
   return Math.ceil((target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+};
+
+const buildCxpAgingSegments = (data: AppData): ChartPoint[] => {
+  const bucketValues = new Map<string, number>([
+    ["Vencidas", 0],
+    ["0-7 dias", 0],
+    ["8-30 dias", 0],
+    [">30 dias", 0],
+  ]);
+
+  data.cxp
+    .filter((cuenta) => cuenta.saldo > 0)
+    .forEach((cuenta) => {
+      const days = daysUntil(cuenta.vencimiento);
+      if (days === null) {
+        return;
+      }
+
+      if (days < 0) {
+        bucketValues.set("Vencidas", (bucketValues.get("Vencidas") ?? 0) + cuenta.saldo);
+        return;
+      }
+
+      if (days <= 7) {
+        bucketValues.set("0-7 dias", (bucketValues.get("0-7 dias") ?? 0) + cuenta.saldo);
+        return;
+      }
+
+      if (days <= 30) {
+        bucketValues.set("8-30 dias", (bucketValues.get("8-30 dias") ?? 0) + cuenta.saldo);
+        return;
+      }
+
+      bucketValues.set(">30 dias", (bucketValues.get(">30 dias") ?? 0) + cuenta.saldo);
+    });
+
+  return [...bucketValues.entries()].map(([label, value]) => ({ label, value }));
 };
 
 const buildSmartAlerts = (data: AppData): SmartAlert[] => {
@@ -387,8 +579,24 @@ const buildReportCsv = (
 
 export function ReportesScreen({ data }: ReportesScreenProps) {
   const navigate = useNavigate();
+  const { notifyError, notifySuccess } = useNotifications();
   const [filters, setFilters] = useState<ReportFilters>(defaultFilters);
+  const [showPowerBiTechnical, setShowPowerBiTechnical] = useState(false);
+  const [powerBiDataset, setPowerBiDataset] = useState<PowerBiComprasDatasetApi | null>(null);
+  const [powerBiSqlTemplates, setPowerBiSqlTemplates] = useState<PowerBiSqlTemplatesApi | null>(null);
+  const [powerBiLoading, setPowerBiLoading] = useState(false);
+  const [powerBiError, setPowerBiError] = useState<string | null>(null);
   const dateRange = useMemo(() => resolveDateRange(filters), [filters]);
+  const powerBiRange = useMemo(
+    () =>
+      dateRange
+        ? {
+            from: toInputDate(dateRange.start),
+            to: toInputDate(dateRange.end),
+          }
+        : undefined,
+    [dateRange],
+  );
   const warehouseOptions = useMemo(
     () => [...new Set(data.inventario.map((row) => row.almacen))].sort((a, b) => a.localeCompare(b)),
     [data.inventario],
@@ -462,15 +670,73 @@ export function ReportesScreen({ data }: ReportesScreenProps) {
     .sort((a, b) => a.disponible - b.disponible)
     .slice(0, 8);
   const monthlySeries = buildMonthlySeries(filteredData);
+  const paymentMonthlySeries = buildPaymentsMonthlySeries(filteredData);
   const stockByWarehouse = buildStockByWarehouse(filteredData);
   const cxpSegments = buildCxpSegments(filteredData);
+  const cxpAgingSegments = buildCxpAgingSegments(filteredData);
+  const providerSpendSeries = buildProviderSpendSeries(filteredData);
   const smartAlerts = buildSmartAlerts(filteredData);
+  const cuentasConSaldo = filteredData.cxp.filter((cuenta) => cuenta.saldo > 0);
+  const cuentasVencidas = cuentasConSaldo.filter((cuenta) => {
+    const days = daysUntil(cuenta.vencimiento);
+    return days !== null && days < 0;
+  });
+  const saldoVencido = cuentasVencidas.reduce((total, cuenta) => total + cuenta.saldo, 0);
+  const ticketPromedio = filteredData.ordenes.length > 0 ? totalCompras / filteredData.ordenes.length : 0;
+  const coberturaPagosPorcentaje =
+    saldoCxp + pagosRegistrados > 0 ? (pagosRegistrados / (saldoCxp + pagosRegistrados)) * 100 : 0;
+  const coberturaInventarioPorcentaje =
+    stockDisponible + stockComprometido > 0
+      ? (stockDisponible / (stockDisponible + stockComprometido)) * 100
+      : 0;
+  const concentracionTopProveedorPorcentaje =
+    totalCompras > 0 && providerSpendSeries.length > 0
+      ? (providerSpendSeries[0]?.value ?? 0) / totalCompras * 100
+      : 0;
   const activeFilterCount = [
     filters.datePreset !== "all",
     filters.proveedorId,
     filters.warehouse,
     filters.estado,
   ].filter(Boolean).length;
+  const executiveScorecards: ExecutiveScorecard[] = [
+    {
+      label: "Ticket promedio de compra",
+      value: formatMoney(ticketPromedio),
+      hint: `${filteredData.ordenes.length} ordenes consideradas`,
+      tone: "info",
+    },
+    {
+      label: "Cobertura de pagos",
+      value: `${currencyFormatter.format(coberturaPagosPorcentaje)}%`,
+      hint: "Porcentaje pagado sobre el total comprometido",
+      tone: coberturaPagosPorcentaje >= 70 ? "success" : coberturaPagosPorcentaje >= 45 ? "warning" : "error",
+    },
+    {
+      label: "Exposicion vencida",
+      value: formatMoney(saldoVencido),
+      hint: `${cuentasVencidas.length} cuentas vencidas con saldo`,
+      tone: cuentasVencidas.length > 0 ? "error" : "success",
+    },
+    {
+      label: "Concentracion top proveedor",
+      value: `${currencyFormatter.format(concentracionTopProveedorPorcentaje)}%`,
+      hint: "Participacion del proveedor con mayor compra",
+      tone: concentracionTopProveedorPorcentaje > 45 ? "warning" : "info",
+    },
+    {
+      label: "Cobertura de inventario",
+      value: `${currencyFormatter.format(coberturaInventarioPorcentaje)}%`,
+      hint: "Disponible / (Disponible + Comprometido)",
+      tone: coberturaInventarioPorcentaje >= 70 ? "success" : coberturaInventarioPorcentaje >= 45 ? "warning" : "error",
+    },
+    {
+      label: "Backlog de ordenes",
+      value: `${ordenesAbiertas.length}`,
+      hint: "Ordenes en BORRADOR, APROBADO o ABIERTO",
+      tone: ordenesAbiertas.length > 15 ? "warning" : "info",
+    },
+  ];
 
   const summaries = [
     {
@@ -525,6 +791,72 @@ export function ReportesScreen({ data }: ReportesScreenProps) {
     Media: "warning",
     Baja: "info",
   } satisfies Record<SmartAlertSeverity, "error" | "info" | "warning">;
+  const scoreToneColor = {
+    error: "error.main",
+    info: "primary.main",
+    success: "success.main",
+    warning: "warning.main",
+  } satisfies Record<ExecutiveScorecard["tone"], string>;
+  const syncPowerBiDataset = async () => {
+    setPowerBiLoading(true);
+    setPowerBiError(null);
+
+    try {
+      const [dataset, sqlTemplates] = await Promise.all([
+        erpService.fetchPowerBiComprasDataset(powerBiRange),
+        erpService.fetchPowerBiSqlTemplates(),
+      ]);
+      setPowerBiDataset(dataset);
+      setPowerBiSqlTemplates(sqlTemplates);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo consultar el dataset de Power BI.";
+      setPowerBiError(message);
+      notifyError(message);
+    } finally {
+      setPowerBiLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void syncPowerBiDataset();
+  }, [powerBiRange?.from, powerBiRange?.to]);
+
+  const exportPowerBiConnectionFile = () => {
+    try {
+      const sourceUrl = erpService.buildPowerBiCsvExportUrl(powerBiRange);
+      const pbids = buildPowerBiPbidsFile(sourceUrl);
+      const filename = `powerbi-compras-${exportFilenameDate}.pbids`;
+      downloadTextFile(filename, pbids, "application/json;charset=utf-8");
+      notifySuccess("Archivo Power BI generado. Abre el .pbids en Power BI Desktop.");
+    } catch (error) {
+      notifyError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo generar el archivo de conexion para Power BI.",
+      );
+    }
+  };
+  const exportPowerBiThemeFile = () => {
+    const filename = `powerbi-theme-empresarial-${exportFilenameDate}.json`;
+    downloadTextFile(filename, buildPowerBiEnterpriseThemeFile(), "application/json;charset=utf-8");
+    notifySuccess("Tema empresarial de Power BI descargado.");
+  };
+  const exportPowerBiPlaybook = () => {
+    try {
+      const csvUrl = erpService.buildPowerBiCsvExportUrl(powerBiRange);
+      const datasetUrl = csvUrl.replace("/api/powerbi/compras/csv", "/api/powerbi/compras");
+      const guide = buildPowerBiPlaybookFile(datasetUrl, csvUrl);
+      const filename = `powerbi-playbook-${exportFilenameDate}.md`;
+      downloadTextFile(filename, guide, "text/markdown;charset=utf-8");
+      notifySuccess("Guia empresarial de armado en Power BI descargada.");
+    } catch (error) {
+      notifyError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo generar la guia de armado para Power BI.",
+      );
+    }
+  };
 
   return (
     <Stack spacing={3}>
@@ -714,6 +1046,169 @@ export function ReportesScreen({ data }: ReportesScreenProps) {
         </Typography>
       </Box>
 
+      <Paper className="no-print" sx={{ p: 2.5 }} variant="outlined">
+        <Stack spacing={2}>
+          <Stack direction={{ md: "row", xs: "column" }} spacing={1.5} sx={{ alignItems: { md: "center", xs: "stretch" }, justifyContent: "space-between" }}>
+            <Box>
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                <InsightsIcon fontSize="small" />
+                <Typography component="h3" sx={{ fontWeight: 850 }} variant="h6">
+                  Analisis avanzado (Power BI)
+                </Typography>
+              </Stack>
+              <Typography color="text.secondary" variant="body2">
+                Sincroniza los datos de compras para paneles gerenciales y exportacion de reportes.
+                El archivo PBIDS conecta datos, pero no crea visuales automaticamente.
+              </Typography>
+            </Box>
+            <Stack direction="row" spacing={1}>
+              <Button disabled={powerBiLoading} onClick={() => void syncPowerBiDataset()} startIcon={<SyncAltIcon />} variant="outlined">
+                {powerBiLoading ? "Sincronizando..." : "Actualizar datos"}
+              </Button>
+              <Button disabled={powerBiLoading} onClick={exportPowerBiConnectionFile} startIcon={<DownloadIcon />} variant="contained">
+                Descargar archivo Power BI
+              </Button>
+            </Stack>
+          </Stack>
+
+          <Stack direction={{ md: "row", xs: "column" }} spacing={1}>
+            <Button onClick={exportPowerBiThemeFile} startIcon={<SchemaIcon />} variant="outlined">
+              Descargar tema empresarial
+            </Button>
+            <Button onClick={exportPowerBiPlaybook} startIcon={<AutoGraphIcon />} variant="outlined">
+              Descargar playbook de graficos
+            </Button>
+          </Stack>
+
+          {powerBiError ? (
+            <Paper sx={{ borderColor: "error.main", p: 1.5 }} variant="outlined">
+              <Typography color="error.main" sx={{ fontWeight: 800 }} variant="body2">
+                {powerBiError}
+              </Typography>
+            </Paper>
+          ) : null}
+
+          <Box
+            sx={{
+              display: "grid",
+              gap: 2,
+              gridTemplateColumns: { lg: "repeat(3, minmax(0, 1fr))", xs: "1fr" },
+            }}
+          >
+            <Paper sx={{ p: 1.75 }} variant="outlined">
+              <Stack spacing={0.8}>
+                <Typography color="text.secondary" sx={{ fontSize: 12, fontWeight: 800 }}>
+                  Compras analizadas
+                </Typography>
+                <Typography sx={{ fontWeight: 900 }} variant="h6">
+                  {powerBiDataset ? formatMoney(powerBiDataset.summary.totalPurchases) : "Bs 0.00"}
+                </Typography>
+                <Typography color="text.secondary" variant="caption">
+                  Total consolidado del periodo
+                </Typography>
+              </Stack>
+            </Paper>
+            <Paper sx={{ p: 1.75 }} variant="outlined">
+              <Stack spacing={0.8}>
+                <Typography color="text.secondary" sx={{ fontSize: 12, fontWeight: 800 }}>
+                  Proveedores activos
+                </Typography>
+                <Typography sx={{ fontWeight: 900 }} variant="h6">
+                  {powerBiDataset?.summary.activeProviders ?? 0}
+                </Typography>
+                <Typography color="text.secondary" variant="caption">
+                  Proveedores con actividad
+                </Typography>
+              </Stack>
+            </Paper>
+            <Paper sx={{ p: 1.75 }} variant="outlined">
+              <Stack spacing={0.8}>
+                <Typography color="text.secondary" sx={{ fontSize: 12, fontWeight: 800 }}>
+                  Productos comprados
+                </Typography>
+                <Typography sx={{ fontWeight: 900 }} variant="h6">
+                  {(powerBiDataset?.summary.productsPurchased ?? 0).toLocaleString("es-BO")}
+                </Typography>
+                <Typography color="text.secondary" variant="caption">
+                  Unidades compradas
+                </Typography>
+              </Stack>
+            </Paper>
+          </Box>
+
+          <Stack direction="row" sx={{ justifyContent: "flex-start" }}>
+            <Button
+              onClick={() => setShowPowerBiTechnical((current) => !current)}
+              startIcon={<StorageIcon fontSize="small" />}
+              variant="text"
+            >
+              {showPowerBiTechnical ? "Ocultar detalles tecnicos" : "Ver detalles tecnicos"}
+            </Button>
+          </Stack>
+
+          {showPowerBiTechnical ? (
+            <Box
+              sx={{
+                display: "grid",
+                gap: 2,
+                gridTemplateColumns: { lg: "repeat(3, minmax(0, 1fr))", xs: "1fr" },
+              }}
+            >
+              <Paper sx={{ p: 1.75 }} variant="outlined">
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1 }}>
+                  <StorageIcon fontSize="small" />
+                  <Typography sx={{ fontWeight: 850 }} variant="body2">
+                    REST JSON
+                  </Typography>
+                </Stack>
+                <Typography className="mono-code" variant="caption">
+                  GET /api/powerbi/compras
+                </Typography>
+                <Typography color="text.secondary" variant="body2">
+                  Incluye resumen, compras mensuales, top proveedores y top productos.
+                </Typography>
+              </Paper>
+              <Paper sx={{ p: 1.75 }} variant="outlined">
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1 }}>
+                  <DownloadIcon fontSize="small" />
+                  <Typography sx={{ fontWeight: 850 }} variant="body2">
+                    CSV
+                  </Typography>
+                </Stack>
+                <Typography className="mono-code" variant="caption">
+                  GET /api/powerbi/compras/csv
+                </Typography>
+                <Typography color="text.secondary" variant="body2">
+                  Exportacion tabular para Power BI Import.
+                </Typography>
+              </Paper>
+              <Paper sx={{ p: 1.75 }} variant="outlined">
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1 }}>
+                  <StorageIcon fontSize="small" />
+                  <Typography sx={{ fontWeight: 850 }} variant="body2">
+                    SQL
+                  </Typography>
+                </Stack>
+                <Typography className="mono-code" variant="caption">
+                  GET /api/powerbi/compras/sql
+                </Typography>
+                <Typography color="text.secondary" variant="body2">
+                  Plantillas para vistas y consultas DirectQuery.
+                </Typography>
+              </Paper>
+              {powerBiSqlTemplates ? (
+                <Paper sx={{ gridColumn: { lg: "1 / -1", xs: "auto" }, p: 1.75 }} variant="outlined">
+                  <Typography sx={{ fontWeight: 850 }} variant="body2">
+                    Ejemplo SQL: compras mensuales
+                  </Typography>
+                  <pre>{powerBiSqlTemplates.queries.monthlyPurchases}</pre>
+                </Paper>
+              ) : null}
+            </Box>
+          ) : null}
+        </Stack>
+      </Paper>
+
       <Box
         sx={{
           display: "grid",
@@ -754,6 +1249,60 @@ export function ReportesScreen({ data }: ReportesScreenProps) {
           </Box>
         ))}
       </Box>
+
+      <Paper sx={{ p: 2.5 }} variant="outlined">
+        <Stack spacing={2}>
+          <Stack direction={{ md: "row", xs: "column" }} spacing={1.5} sx={{ alignItems: { md: "center", xs: "stretch" }, justifyContent: "space-between" }}>
+            <Box>
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                <CandlestickChartIcon fontSize="small" />
+                <Typography component="h3" sx={{ fontWeight: 850 }} variant="h6">
+                  Tablero financiero ejecutivo
+                </Typography>
+              </Stack>
+              <Typography color="text.secondary" variant="body2">
+                Indicadores empresariales para evaluar liquidez, concentracion y carga operativa.
+              </Typography>
+            </Box>
+            <Chip
+              color={cuentasVencidas.length > 0 ? "error" : "success"}
+              label={cuentasVencidas.length > 0 ? "Atencion financiera" : "Riesgo financiero controlado"}
+              variant="outlined"
+            />
+          </Stack>
+
+          <Box
+            sx={{
+              display: "grid",
+              gap: 1.5,
+              gridTemplateColumns: { lg: "repeat(3, minmax(0, 1fr))", xs: "1fr" },
+            }}
+          >
+            {executiveScorecards.map((score) => (
+              <Paper
+                key={score.label}
+                sx={{
+                  borderColor: scoreToneColor[score.tone],
+                  p: 1.75,
+                }}
+                variant="outlined"
+              >
+                <Stack spacing={0.7}>
+                  <Typography color="text.secondary" sx={{ fontSize: 12, fontWeight: 800 }}>
+                    {score.label}
+                  </Typography>
+                  <Typography sx={{ fontWeight: 900 }} variant="h6">
+                    {score.value}
+                  </Typography>
+                  <Typography color="text.secondary" variant="caption">
+                    {score.hint}
+                  </Typography>
+                </Stack>
+              </Paper>
+            ))}
+          </Box>
+        </Stack>
+      </Paper>
 
       <Paper sx={{ p: 2.5 }} variant="outlined">
         <Stack spacing={2}>
@@ -844,7 +1393,7 @@ export function ReportesScreen({ data }: ReportesScreenProps) {
         sx={{
           display: "grid",
           gap: 2,
-          gridTemplateColumns: { lg: "minmax(0, 1.35fr) minmax(320px, 0.65fr)", xs: "1fr" },
+          gridTemplateColumns: { lg: "minmax(0, 1fr) minmax(320px, 0.6fr)", xs: "1fr" },
         }}
       >
         <LineChartCard
@@ -860,11 +1409,47 @@ export function ReportesScreen({ data }: ReportesScreenProps) {
         />
       </Box>
 
-      <BarChartCard
-        description="Disponibilidad agregada por almacen."
-        points={stockByWarehouse}
-        title="Stock por almacen"
-      />
+      <Box
+        sx={{
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: { lg: "repeat(2, minmax(0, 1fr))", xs: "1fr" },
+        }}
+      >
+        <LineChartCard
+          color="#0f766e"
+          description="Pagos ejecutados por mes en el periodo de analisis."
+          points={paymentMonthlySeries}
+          title="Pagos por mes"
+          valuePrefix="Bs "
+        />
+        <DonutChartCard
+          description="Distribucion del saldo por pagar segun dias al vencimiento."
+          segments={cxpAgingSegments}
+          title="Aging de CxP (saldo)"
+        />
+      </Box>
+
+      <Box
+        sx={{
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: { lg: "repeat(2, minmax(0, 1fr))", xs: "1fr" },
+        }}
+      >
+        <BarChartCard
+          color="#1d4ed8"
+          description="Concentracion de gasto en proveedores principales."
+          points={providerSpendSeries}
+          title="Gasto por proveedor"
+          valuePrefix="Bs "
+        />
+        <BarChartCard
+          description="Disponibilidad agregada por almacen."
+          points={stockByWarehouse}
+          title="Stock por almacen"
+        />
+      </Box>
 
       <Box
         sx={{
@@ -877,7 +1462,7 @@ export function ReportesScreen({ data }: ReportesScreenProps) {
           <Paper sx={{ p: 2.5, height: "100%" }} variant="outlined">
             <Stack spacing={2}>
               <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                <ReportProblemIcon fontSize="small" />
+                <BalanceIcon fontSize="small" />
                 <Typography component="h3" variant="h6">
                   Riesgos operativos
                 </Typography>

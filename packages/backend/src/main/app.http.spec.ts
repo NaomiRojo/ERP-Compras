@@ -693,4 +693,50 @@ describe("app http integration", () => {
       },
     ]);
   });
+
+  test("permite consumir Power BI CSV con API key por Basic auth", async () => {
+    const previousApiKey = Bun.env.POWERBI_API_KEY;
+    Bun.env.POWERBI_API_KEY = "test-powerbi-key";
+
+    try {
+      const app = createApp(createDependencies());
+      const response = await app.fetch(
+        new Request("http://localhost/api/powerbi/compras/csv", {
+          headers: {
+            authorization: `Basic ${btoa("test-powerbi-key:")}`,
+          },
+        }),
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("content-type")).toContain("text/csv");
+    } finally {
+      if (previousApiKey === undefined) {
+        Bun.env.POWERBI_API_KEY = "";
+      } else {
+        Bun.env.POWERBI_API_KEY = previousApiKey;
+      }
+    }
+  });
+
+  test("permite consumir Power BI CSV con API key por query param", async () => {
+    const previousApiKey = Bun.env.POWERBI_API_KEY;
+    Bun.env.POWERBI_API_KEY = "test-powerbi-key";
+
+    try {
+      const app = createApp(createDependencies());
+      const response = await app.fetch(
+        new Request("http://localhost/api/powerbi/compras/csv?powerbi_key=test-powerbi-key"),
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("content-type")).toContain("text/csv");
+    } finally {
+      if (previousApiKey === undefined) {
+        Bun.env.POWERBI_API_KEY = "";
+      } else {
+        Bun.env.POWERBI_API_KEY = previousApiKey;
+      }
+    }
+  });
 });

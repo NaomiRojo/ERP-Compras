@@ -468,6 +468,96 @@ const auditoriaPaths = {
   },
 };
 
+const powerBiPaths = {
+  [API_ENDPOINTS.powerBi.compras]: {
+    get: withSecurity({
+      tags: ["PowerBI"],
+      summary: "Dataset analitico de compras para Power BI (JSON)",
+      parameters: [
+        {
+          name: "from",
+          in: "query",
+          required: false,
+          schema: { type: "string", format: "date" },
+        },
+        {
+          name: "to",
+          in: "query",
+          required: false,
+          schema: { type: "string", format: "date" },
+        },
+      ],
+      responses: {
+        200: {
+          description: "Dataset listo para consumo analitico",
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/PowerBiComprasDataset",
+              },
+            },
+          },
+        },
+        400: { description: "Rango de fechas invalido" },
+        401: unauthorizedResponse,
+      },
+    }),
+  },
+  [API_ENDPOINTS.powerBi.comprasCsv]: {
+    get: withSecurity({
+      tags: ["PowerBI"],
+      summary: "Exportacion CSV de compras para Power BI",
+      parameters: [
+        {
+          name: "from",
+          in: "query",
+          required: false,
+          schema: { type: "string", format: "date" },
+        },
+        {
+          name: "to",
+          in: "query",
+          required: false,
+          schema: { type: "string", format: "date" },
+        },
+      ],
+      responses: {
+        200: {
+          description: "CSV generado",
+          content: {
+            "text/csv": {
+              schema: {
+                type: "string",
+              },
+            },
+          },
+        },
+        400: { description: "Rango de fechas invalido" },
+        401: unauthorizedResponse,
+      },
+    }),
+  },
+  [API_ENDPOINTS.powerBi.comprasSql]: {
+    get: withSecurity({
+      tags: ["PowerBI"],
+      summary: "Plantillas SQL para modelo analitico de compras",
+      responses: {
+        200: {
+          description: "Consultas SQL recomendadas",
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/PowerBiSqlTemplates",
+              },
+            },
+          },
+        },
+        401: unauthorizedResponse,
+      },
+    }),
+  },
+};
+
 export const openApiPaths = {
   [SYSTEM_ENDPOINTS.health]: {
     get: {
@@ -506,5 +596,6 @@ export const openApiPaths = {
   ...cuentasPorPagarPaths,
   ...inventarioPaths,
   ...auditoriaPaths,
+  ...powerBiPaths,
   ...crudPaths,
 } as const;

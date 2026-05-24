@@ -371,6 +371,7 @@ export function OrdenesScreen({
   const [mode, setMode] = useState<ScreenMode>("list");
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
+  const [statusFilter, setStatusFilter] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [orderValidationActive, setOrderValidationActive] = useState(false);
@@ -751,8 +752,10 @@ export function OrdenesScreen({
         onOpenDetail={openDetail}
         onReceive={startReceive}
         onSearchTermChange={setSearchTerm}
+        onStatusFilterChange={setStatusFilter}
         orders={filteredOrders}
         searchTerm={searchTerm}
+        statusFilter={statusFilter}
       />
 
       {errorMessage && mode !== "create" && mode !== "edit" && mode !== "receive" ? (

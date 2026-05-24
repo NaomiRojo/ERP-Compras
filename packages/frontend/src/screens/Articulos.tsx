@@ -5,7 +5,7 @@ import { Box, Drawer, IconButton } from "@mui/material";
 import { ArticleEditor } from "../components/Articles/ArticleEditor";
 import { Badge } from "../components/Common/Badge";
 import { CrudToolbar } from "../components/Common/CrudToolbar";
-import { DataTable } from "../components/Common/DataTable";
+import { DataTable, type DataTableFilter } from "../components/Common/DataTable";
 import { PermissionGate } from "../components/Common/PermissionGate";
 import type { Article } from "../types";
 import type { CrearArticuloDto, GrupoArticuloApi, ImpuestoApi } from "../types/api";
@@ -128,6 +128,7 @@ export function ArticulosScreen({
   const [editorMode, setEditorMode] = useState<EditorMode | null>(null);
   const [editingArticuloId, setEditingArticuloId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [validationActive, setValidationActive] = useState(false);
@@ -263,6 +264,19 @@ export function ArticulosScreen({
   const showFieldError = (field: ArticleField): string | undefined =>
     validationActive ? fieldErrors[field] : undefined;
   const editorOpen = canManage && editorMode !== null;
+  const tableFilters: DataTableFilter[] = [
+    {
+      id: "estado",
+      label: "Estado",
+      value: statusFilter,
+      onChange: setStatusFilter,
+      options: [
+        { label: "Todos", value: "" },
+        { label: "Activos", value: "ACTIVO" },
+        { label: "Inactivos", value: "INACTIVO" },
+      ],
+    },
+  ];
 
   return (
     <div className="stack">
@@ -270,6 +284,9 @@ export function ArticulosScreen({
         title="Articulos"
         description="Catalogo base, costos, grupos e impuestos conectados al maestro ERP."
         headers={["SKU", "Nombre", "Clasificacion", "Costo", "Estado", "Acciones"]}
+        filters={tableFilters}
+        pagination={{ enabled: true, defaultRowsPerPage: 10, rowsPerPageOptions: [5, 10, 25, 50] }}
+        sortableColumns={[0, 1, 2, 3, 4]}
         actions={
           <CrudToolbar
             createActionDisabledReason="Tu rol no tiene permiso para crear articulos."
@@ -281,6 +298,13 @@ export function ArticulosScreen({
           />
         }
         emptyMessage="No hay articulos que coincidan con la busqueda."
+        rowMeta={filteredArticles.map((article) => ({
+          id: article.id,
+          filterValues: {
+            estado: article.activo ? "ACTIVO" : "INACTIVO",
+          },
+          sortValues: [article.itemCode, article.itemName, article.grupo, article.costo, article.activo ? 1 : 0],
+        }))}
         rows={filteredArticles.map((article) => [
           <strong key={`${article.id}-sku`}>{article.itemCode}</strong>,
           <div key={`${article.id}-name`}>

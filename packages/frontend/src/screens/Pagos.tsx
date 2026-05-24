@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 
-import { DataTable } from "../components/Common/DataTable";
+import { DataTable, type DataTableFilter } from "../components/Common/DataTable";
 import { PermissionGate } from "../components/Common/PermissionGate";
+import { SearchBar } from "../components/Common/SearchBar";
 import type { Payment } from "../types";
 import type { RegistrarPagoProveedorDto } from "../types/api";
 import {
@@ -82,12 +83,46 @@ const validatePaymentForm = (
 
 export function PagosScreen({ pagos, canRegister, cuentasPago, onRegister }: PagosScreenProps) {
   const [isFormVisible, setIsFormVisible] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [providerFilter, setProviderFilter] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [validationActive, setValidationActive] = useState(false);
   const [form, setForm] = useState<PaymentFormState>(() => buildEmptyForm(cuentasPago));
 
   const fieldErrors = useMemo(() => validatePaymentForm(form, cuentasPago), [cuentasPago, form]);
+  const filteredPayments = useMemo(() => {
+    const normalizedQuery = searchTerm.trim().toLowerCase();
+
+    return pagos.filter((payment) => {
+      if (providerFilter && payment.proveedor !== providerFilter) {
+        return false;
+      }
+
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      return [payment.fecha, payment.proveedor, payment.referencia, payment.usuario, payment.monto]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedQuery);
+    });
+  }, [pagos, providerFilter, searchTerm]);
+  const tableFilters: DataTableFilter[] = [
+    {
+      id: "proveedor",
+      label: "Proveedor",
+      value: providerFilter,
+      onChange: setProviderFilter,
+      options: [
+        { label: "Todos", value: "" },
+        ...[...new Set(pagos.map((payment) => payment.proveedor))]
+          .sort((a, b) => a.localeCompare(b, "es"))
+          .map((provider) => ({ label: provider, value: provider })),
+      ],
+    },
+  ];
 
   const resetForm = () => {
     setForm(buildEmptyForm(cuentasPago));
@@ -144,23 +179,40 @@ export function PagosScreen({ pagos, canRegister, cuentasPago, onRegister }: Pag
         title="Pagos"
         description="Historico de transacciones registradas."
         headers={["Fecha", "Proveedor", "Referencia", "Monto", "Usuario"]}
+        filters={tableFilters}
+        pagination={{ enabled: true, defaultRowsPerPage: 10, rowsPerPageOptions: [5, 10, 25, 50] }}
+        sortableColumns={[0, 1, 2, 3, 4]}
         actions={
-          <PermissionGate disabled={!canRegister} reason="Tu rol no tiene permiso para registrar pagos.">
-            <button
-              className="primary-button"
-              disabled={!canRegister}
-              onClick={() => {
-                setErrorMessage(null);
-                setValidationActive(false);
-                setIsFormVisible((value) => !value);
-              }}
-              type="button"
-            >
-              {isFormVisible ? "Cerrar" : "Registrar pago"}
-            </button>
-          </PermissionGate>
+          <div className="action-row">
+            <SearchBar
+              onChange={setSearchTerm}
+              placeholder="Proveedor, referencia, usuario..."
+              value={searchTerm}
+            />
+            <PermissionGate disabled={!canRegister} reason="Tu rol no tiene permiso para registrar pagos.">
+              <button
+                className="primary-button"
+                disabled={!canRegister}
+                onClick={() => {
+                  setErrorMessage(null);
+                  setValidationActive(false);
+                  setIsFormVisible((value) => !value);
+                }}
+                type="button"
+              >
+                {isFormVisible ? "Cerrar" : "Registrar pago"}
+              </button>
+            </PermissionGate>
+          </div>
         }
-        rows={pagos.map((payment) => [
+        rowMeta={filteredPayments.map((payment) => ({
+          id: payment.id,
+          filterValues: {
+            proveedor: payment.proveedor,
+          },
+          sortValues: [payment.fecha, payment.proveedor, payment.referencia, payment.monto, payment.usuario],
+        }))}
+        rows={filteredPayments.map((payment) => [
           payment.fecha,
           payment.proveedor,
           payment.referencia,

@@ -1,5 +1,3 @@
-import { Navigate } from "react-router-dom";
-
 import type { UseERPWorkspaceResult } from "../../hooks/useERPWorkspace";
 import { VIEW_LABELS } from "../../router/views";
 import {
@@ -8,6 +6,7 @@ import {
   CuentasPorPagarScreen,
   DashboardScreen,
   InventarioScreen,
+  NotFoundScreen,
   OrdenesScreen,
   PagosScreen,
   ProveedoresScreen,
@@ -37,7 +36,16 @@ export function ProtectedAppShell({
   workspace,
 }: ProtectedAppShellProps) {
   if (!isCurrentViewAllowed || currentView === null) {
-    return <Navigate replace to={defaultProtectedPath} />;
+    return (
+      <NotFoundScreen
+        actionLabel="Volver al dashboard"
+        description="La vista solicitada no existe para este perfil o no esta habilitada."
+        onPrimaryAction={() => {
+          window.location.hash = defaultProtectedPath;
+        }}
+        title="Vista no disponible"
+      />
+    );
   }
 
   const currentSubtitle =

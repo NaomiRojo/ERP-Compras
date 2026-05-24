@@ -1,8 +1,10 @@
-import { describe, expect, it, mock } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 import { render } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router-dom";
 
+import { erpService } from "../api/erp";
+import { NotificationsProvider } from "../components/Common/Notifications";
 import type { AppData } from "../types";
 import { ReportesScreen } from "./Reportes";
 
@@ -174,11 +176,62 @@ function LocationProbe() {
 
 const renderReportes = () =>
   render(
-    <MemoryRouter initialEntries={["/app/reportes"]}>
-      <ReportesScreen data={data} />
-      <LocationProbe />
-    </MemoryRouter>,
+    <NotificationsProvider>
+      <MemoryRouter initialEntries={["/app/reportes"]}>
+        <ReportesScreen data={data} />
+        <LocationProbe />
+      </MemoryRouter>
+    </NotificationsProvider>,
   );
+
+const powerBiDatasetMock = {
+  generatedAt: "2026-05-01T10:00:00.000Z",
+  period: { from: "2026-05-01", to: "2026-05-31" },
+  summary: {
+    totalPurchases: 1200,
+    pendingOrders: 2,
+    activeProviders: 2,
+    productsPurchased: 10,
+    accountsPayableBalance: 500,
+    paidAmount: 300,
+    overdueAccounts: 1,
+  },
+  monthlyPurchases: [],
+  topProviders: [],
+  topProducts: [],
+  spendByCategory: [],
+  ordersByStatus: [],
+  orders: [],
+};
+
+const powerBiSqlMock = {
+  generatedAt: "2026-05-01T10:00:00.000Z",
+  databaseEngine: "PostgreSQL",
+  notes: [],
+  queries: {
+    monthlyPurchases: "SELECT 1",
+    topProviders: "SELECT 1",
+    topProducts: "SELECT 1",
+    spendByCategory: "SELECT 1",
+  },
+};
+
+const originalFetchPowerBiDataset = erpService.fetchPowerBiComprasDataset;
+const originalFetchPowerBiSql = erpService.fetchPowerBiSqlTemplates;
+
+beforeEach(() => {
+  erpService.fetchPowerBiComprasDataset = mock(
+    async () => powerBiDatasetMock,
+  ) as typeof erpService.fetchPowerBiComprasDataset;
+  erpService.fetchPowerBiSqlTemplates = mock(
+    async () => powerBiSqlMock,
+  ) as typeof erpService.fetchPowerBiSqlTemplates;
+});
+
+afterEach(() => {
+  erpService.fetchPowerBiComprasDataset = originalFetchPowerBiDataset;
+  erpService.fetchPowerBiSqlTemplates = originalFetchPowerBiSql;
+});
 
 describe("ReportesScreen", () => {
   it("filtra por proveedor y permite limpiar filtros", async () => {
@@ -254,6 +307,63 @@ describe("ReportesScreen", () => {
       expect(csv).toContain('"ERP Compras","Reporte operativo"');
       expect(csv).toContain('"Proveedor sobre linea de credito"');
       expect(csv).toContain('"OC-1001"');
+    } finally {
+      document.createElement = originalCreateElement;
+    }
+  });
+
+  it("descarga un archivo PBIDS para abrir el dataset en Power BI Desktop", async () => {
+    const user = userEvent.setup({ document: globalThis.document });
+    const exportedBlob: { current?: Blob } = {};
+    const createObjectURL = mock((blob: Blob) => {
+      exportedBlob.current = blob;
+      return "blob:powerbi";
+    });
+    const revokeObjectURL = mock(() => undefined);
+
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      value: createObjectURL,
+    });
+    Object.defineProperty(URL, "revokeObjectURL", {
+      configurable: true,
+      value: revokeObjectURL,
+    });
+
+    const originalCreateElement = document.createElement.bind(document);
+    const linkClick = mock(() => undefined);
+    let downloadName = "";
+    document.createElement = ((tagName: string) => {
+      const element = originalCreateElement(tagName);
+      if (tagName.toLowerCase() === "a") {
+        element.click = () => {
+          linkClick();
+          downloadName = (element as HTMLAnchorElement).download;
+        };
+      }
+      return element;
+    }) as typeof document.createElement;
+
+    try {
+      const view = renderReportes();
+      await user.click(view.getByRole("button", { name: "Descargar archivo Power BI" }));
+
+      expect(createObjectURL).toHaveBeenCalledTimes(1);
+      expect(linkClick).toHaveBeenCalledTimes(1);
+      expect(revokeObjectURL).toHaveBeenCalledWith("blob:powerbi");
+      expect(downloadName.endsWith(".pbids")).toBe(true);
+      expect(exportedBlob.current).toBeTruthy();
+
+      if (!exportedBlob.current) {
+        throw new Error("No se genero el archivo PBIDS");
+      }
+
+      const pbids = await exportedBlob.current.text();
+      expect(pbids).toContain('"version": "0.1"');
+      expect(pbids).toContain('"protocol": "http"');
+      expect(pbids).toContain("/api/powerbi/compras/csv");
+      expect(pbids).toContain("powerbi_key=");
+      expect(pbids).toContain('"mode": "Import"');
     } finally {
       document.createElement = originalCreateElement;
     }
