@@ -83,7 +83,11 @@ steps:
         $ErrorActionPreference = "Stop"
         Push-Location packages/frontend
         bun run typecheck
-        bun test
+        if ($env:BUILD_SOURCEBRANCH -eq "refs/heads/prueba") {
+          bun test --parallel=1 --max-concurrency=4
+        } else {
+          bun test
+        }
         bun run build
         Pop-Location
 
