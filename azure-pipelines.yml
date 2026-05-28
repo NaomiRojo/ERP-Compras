@@ -57,10 +57,14 @@ steps:
 
   - script: |
       set -e
-      if [ -n "${COMPRAS_TOKEN:-}" ]; then
+      if [ "$BUILD_SOURCEBRANCH" = "refs/heads/prueba" ] || [ "$BUILD_SOURCEBRANCH" = "refs/heads/main" ]; then
+        if [ -z "${COMPRAS_TOKEN:-}" ]; then
+          echo "##vso[task.logissue type=error]Falta el secreto 'compras' para desplegar frontend."
+          exit 1
+        fi
         echo "Secreto de despliegue disponible."
       else
-        echo "##vso[task.logissue type=warning]Secreto compras no disponible para este run."
+        echo "Rama sin despliegue, validacion de secreto omitida."
       fi
     displayName: Validar secreto compras
     env:
@@ -68,7 +72,7 @@ steps:
 
   - task: AzureStaticWebApp@0
     displayName: Desplegar frontend a Azure Static Web Apps
-    condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/prueba'), eq(variables['Build.SourceBranch'], 'refs/heads/main')))
+    condition: and(succeeded(), ne(variables['compras'], ''), or(eq(variables['Build.SourceBranch'], 'refs/heads/prueba'), eq(variables['Build.SourceBranch'], 'refs/heads/main')))
     inputs:
       workingDirectory: '$(System.DefaultWorkingDirectory)/packages/frontend'
       app_location: 'dist'
