@@ -1,21 +1,67 @@
-# Node.js with Vue
-# Build a Node.js project that uses Vue.
-# Add steps that analyze code, save build artifacts, deploy, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
-
 trigger:
-- proyecto_limpio
+  branches:
+    include:
+      - prueba
+      - main
+      - proyecto_limpio
+
+pr:
+  branches:
+    include:
+      - main
+      - prueba
+
+variables:
+  - group: erp-secret
 
 pool:
   vmImage: ubuntu-latest
 
 steps:
-- task: NodeTool@0
-  inputs:
-    versionSpec: '20.x'
-  displayName: 'Install Node.js'
+  - checkout: self
+    fetchDepth: 0
 
-- script: |
-    npm install
-    npm run build
-  displayName: 'npm install and build'
+  - script: |
+      set -e
+      curl -fsSL https://bun.sh/install | bash
+      echo "##vso[task.prependpath]$HOME/.bun/bin"
+      bun --version
+    displayName: Instalar Bun
+
+  - script: |
+      set -e
+      bun install
+    displayName: Instalar dependencias
+
+  - script: |
+      set -e
+      cd packages/backend
+      bunx tsc --noEmit -p tsconfig.json
+      bun test
+    displayName: Backend - typecheck + tests
+
+  - script: |
+      set -e
+      cd packages/frontend
+      bun run typecheck
+      bun test
+      bun run build
+    displayName: Frontend - typecheck + tests + build
+
+  - task: PublishPipelineArtifact@1
+    inputs:
+      targetPath: 'packages/frontend/dist'
+      artifact: 'frontend-dist'
+      publishLocation: 'pipeline'
+    displayName: Publicar artefacto frontend
+
+  - script: |
+      set -e
+      if [ -n "${COMPRAS_TOKEN:-}" ]; then
+        echo "Secreto de despliegue disponible."
+      else
+        echo "##vso[task.logissue type=warning]Secreto compras no disponible para este run."
+      fi
+    displayName: Validar secreto compras
+    env:
+      COMPRAS_TOKEN: $(compras)
