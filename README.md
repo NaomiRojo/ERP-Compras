@@ -345,6 +345,10 @@ Se validó:
 - los usuarios sí se guardan en PostgreSQL; si no aparecen tras recargar, el problema actual está en frontend, no en la BD
 - Swagger es la forma más rápida de probar el backend en esta etapa
 
+## Guía de CI/CD para Frontend
+
+- Deploy con Azure Static Web Apps + agente self-hosted Windows en `docs/AZURE-STATIC-WEBAPP-AGENT-SETUP.md`.
+
 ## Referencias internas
 
 - [README backend](/home/naomi/erp-final/packages/backend/README.md)
