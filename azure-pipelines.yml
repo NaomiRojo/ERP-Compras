@@ -27,10 +27,27 @@ steps:
       targetType: inline
       script: |
         $ErrorActionPreference = "Stop"
-        if (-not (Get-Command bun -ErrorAction SilentlyContinue)) {
-          powershell -NoProfile -ExecutionPolicy Bypass -Command "irm bun.sh/install.ps1|iex"
+        $bunBin = $null
+        $bunCmd = Get-Command bun -ErrorAction SilentlyContinue
+        if ($bunCmd) {
+          $bunBin = Split-Path -Parent $bunCmd.Source
+        } else {
+          $bunRoot = Join-Path $env:AGENT_TEMPDIRECTORY "bun-portable"
+          $bunZip = Join-Path $env:AGENT_TEMPDIRECTORY "bun-windows-x64.zip"
+          $bunBin = Join-Path $bunRoot "bun-windows-x64"
+
+          if (-not (Test-Path (Join-Path $bunBin "bun.exe"))) {
+            Write-Host "Bun no encontrado en PATH. Descargando binario portable..."
+            if (Test-Path $bunRoot) { Remove-Item -Recurse -Force $bunRoot }
+            Invoke-WebRequest -Uri "https://github.com/oven-sh/bun/releases/latest/download/bun-windows-x64.zip" -OutFile $bunZip
+            Expand-Archive -Path $bunZip -DestinationPath $bunRoot -Force
+          }
         }
-        $bunBin = Join-Path $env:USERPROFILE ".bun\bin"
+
+        if (-not (Test-Path (Join-Path $bunBin "bun.exe"))) {
+          throw "No se pudo preparar Bun en el agente."
+        }
+
         Write-Host "##vso[task.prependpath]$bunBin"
         bun --version
 
