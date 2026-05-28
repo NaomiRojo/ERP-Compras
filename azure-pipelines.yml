@@ -15,38 +15,57 @@ variables:
   - group: erp-secret
 
 pool:
-  vmImage: ubuntu-latest
+  name: Default
+  demands:
+    - Agent.OS -equals Windows_NT
 
 steps:
   - checkout: self
     fetchDepth: 0
 
-  - script: |
-      set -e
-      curl -fsSL https://bun.sh/install | bash
-      echo "##vso[task.prependpath]$HOME/.bun/bin"
-      bun --version
+  - task: PowerShell@2
     displayName: Instalar Bun
+    inputs:
+      targetType: inline
+      script: |
+        $ErrorActionPreference = "Stop"
+        if (-not (Get-Command bun -ErrorAction SilentlyContinue)) {
+          powershell -NoProfile -ExecutionPolicy Bypass -Command "irm bun.sh/install.ps1|iex"
+        }
+        $bunBin = Join-Path $env:USERPROFILE ".bun\bin"
+        Write-Host "##vso[task.prependpath]$bunBin"
+        bun --version
 
-  - script: |
-      set -e
-      bun install
+  - task: PowerShell@2
     displayName: Instalar dependencias
+    inputs:
+      targetType: inline
+      script: |
+        $ErrorActionPreference = "Stop"
+        bun install
 
-  - script: |
-      set -e
-      cd packages/backend
-      bunx tsc --noEmit -p tsconfig.json
-      bun test
+  - task: PowerShell@2
     displayName: Backend - typecheck + tests
+    inputs:
+      targetType: inline
+      script: |
+        $ErrorActionPreference = "Stop"
+        Push-Location packages/backend
+        bunx tsc --noEmit -p tsconfig.json
+        bun test
+        Pop-Location
 
-  - script: |
-      set -e
-      cd packages/frontend
-      bun run typecheck
-      bun test
-      bun run build
+  - task: PowerShell@2
     displayName: Frontend - typecheck + tests + build
+    inputs:
+      targetType: inline
+      script: |
+        $ErrorActionPreference = "Stop"
+        Push-Location packages/frontend
+        bun run typecheck
+        bun test
+        bun run build
+        Pop-Location
 
   - task: PublishPipelineArtifact@1
     inputs:
@@ -55,20 +74,24 @@ steps:
       publishLocation: 'pipeline'
     displayName: Publicar artefacto frontend
 
-  - script: |
-      set -e
-      if [ "$BUILD_SOURCEBRANCH" = "refs/heads/prueba" ] || [ "$BUILD_SOURCEBRANCH" = "refs/heads/main" ]; then
-        if [ -z "${COMPRAS_TOKEN:-}" ]; then
-          echo "##vso[task.logissue type=error]Falta el secreto 'compras' para desplegar frontend."
-          exit 1
-        fi
-        echo "Secreto de despliegue disponible."
-      else
-        echo "Rama sin despliegue, validacion de secreto omitida."
-      fi
+  - task: PowerShell@2
     displayName: Validar secreto compras
     env:
       COMPRAS_TOKEN: $(compras)
+    inputs:
+      targetType: inline
+      script: |
+        $ErrorActionPreference = "Stop"
+        $deployBranch = $env:BUILD_SOURCEBRANCH -eq "refs/heads/prueba" -or $env:BUILD_SOURCEBRANCH -eq "refs/heads/main"
+        if ($deployBranch) {
+          if ([string]::IsNullOrWhiteSpace($env:COMPRAS_TOKEN)) {
+            Write-Host "##vso[task.logissue type=error]Falta el secreto 'compras' para desplegar frontend."
+            exit 1
+          }
+          Write-Host "Secreto de despliegue disponible."
+        } else {
+          Write-Host "Rama sin despliegue, validacion de secreto omitida."
+        }
 
   - task: AzureStaticWebApp@0
     displayName: Desplegar frontend a Azure Static Web Apps
