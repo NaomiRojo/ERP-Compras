@@ -65,3 +65,14 @@ steps:
     displayName: Validar secreto compras
     env:
       COMPRAS_TOKEN: $(compras)
+
+  - task: AzureStaticWebApp@0
+    displayName: Desplegar frontend a Azure Static Web Apps
+    condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/prueba'), eq(variables['Build.SourceBranch'], 'refs/heads/main')))
+    inputs:
+      workingDirectory: '$(System.DefaultWorkingDirectory)/packages/frontend'
+      app_location: 'dist'
+      output_location: ''
+      skip_app_build: true
+      skip_api_build: true
+      azure_static_web_apps_api_token: $(compras)
