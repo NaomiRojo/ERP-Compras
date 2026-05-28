@@ -9,6 +9,7 @@
     "start": "bun src/index.html",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
+    "test:smoke": "bun test src/config.test.ts src/api/http.test.ts src/mocks/data.test.ts src/router/views.test.ts src/router/guards.test.tsx src/utils/session.test.ts src/utils/validation.test.ts src/hooks/useInactivityTimeout.test.tsx --parallel=1 --max-concurrency=2",
     "test:watch": "bun test --watch"
   },
   "dependencies": {

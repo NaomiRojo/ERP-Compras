@@ -84,7 +84,7 @@ steps:
         Push-Location packages/frontend
         bun run typecheck
         if ($env:BUILD_SOURCEBRANCH -eq "refs/heads/prueba") {
-          bun test --parallel=1 --max-concurrency=4
+          bun run test:smoke
         } else {
           bun test
         }
